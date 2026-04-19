@@ -39,6 +39,8 @@ class Employees(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
     surname: Mapped[str]
+    login: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[str]
     id_job: Mapped[int] = mapped_column(ForeignKey("jobs.id"))
 
 class Receipts(Base):

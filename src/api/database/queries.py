@@ -1,6 +1,7 @@
-from sqlalchemy import insert, select, Sequence
-from database.models import Products, Categories
+from sqlalchemy import select, Sequence
+from database.models import Products, Categories, Jobs, Employees, Receipts, Sales
 from database.setup import Session
+from datetime import datetime
 class Queries:
 
     @staticmethod
@@ -23,3 +24,30 @@ class Queries:
             session.add(category)
             session.commit()
     
+    @staticmethod
+    def insert_job(name: str) -> None:
+        with Session() as session:
+            job = Jobs(name=name)
+            session.add(job)
+            session.commit()
+
+    @staticmethod
+    def insert_employee(name:str, surname:str, login:str, password:str, id_job) -> None:
+        with Session() as session:
+            employee = Employees(name=name, surname=surname,login=login,password=password,id_job=id_job)
+            session.add(employee)
+            session.commit()
+
+    @staticmethod
+    def insert_receipt(created_at:datetime, id_employee:int):
+        with Session() as session:
+            receipt = Receipts(created_at=created_at, id_employee=id_employee)
+            session.add(receipt)
+            session.commit()
+
+    @staticmethod
+    def insert_sale(id_receipt:int, id_product:int, quintity:int):
+        with Session() as session:
+            sale = Sales(id_receipt=id_receipt, id_product=id_product,quintity=quintity)
+            session.add(sale)
+            session.commit()

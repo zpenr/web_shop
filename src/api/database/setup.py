@@ -13,9 +13,3 @@ def create_db_and_tables() -> None:
 Session = sessionmaker(engine)
 
 create_db_and_tables()
-
-n = Categories(name = "Test")
-
-with Session() as session:
-    session.add(n)
-    session.commit()
