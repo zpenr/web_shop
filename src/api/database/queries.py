@@ -25,9 +25,9 @@ class Queries:
             session.commit()
     
     @staticmethod
-    def insert_job(name: str) -> None:
+    def insert_job(name: str, roots:int) -> None:
         with Session() as session:
-            job = Jobs(name=name)
+            job = Jobs(name=name, roots=roots)
             session.add(job)
             session.commit()
 
@@ -51,3 +51,15 @@ class Queries:
             sale = Sales(id_receipt=id_receipt, id_product=id_product,quintity=quintity)
             session.add(sale)
             session.commit()
+
+    @staticmethod       
+    def job_by_id(id:int):
+        with Session() as session:
+            query = select(Jobs).where(Jobs.id == id)
+            return session.execute(query).scalar_one()
+        
+    @staticmethod
+    def empoloyee_by_login(login:str):
+        with Session() as session:
+            query = select(Employees).where(Employees.login == login)
+            return session.execute(query).scalar_one_or_none()

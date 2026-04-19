@@ -32,6 +32,7 @@ class Jobs(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
+    roots: Mapped[int]
 
 class Employees(Base):
     __tablename__ = "employees"
