@@ -55,7 +55,7 @@ def user_self_info(user = Depends(get_current_user)):
 @auth.get("/permission/")
 def is_permission(roots,user = Depends(get_current_user)):
     if roots >= user.roots:
-        return {"message":"success"}
+        return {"message":"access is allowed"}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                         detail="Permission denied")
     
