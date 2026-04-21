@@ -6,20 +6,23 @@ from database.queries import Queries
 from schemas import UserSchema, TokenSchema
 from utils import jwt
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from database.setup import create_session
+from sqlalchemy.orm import Session
 
 auth = APIRouter(tags=["auth"])
 http_bearer = HTTPBearer()
 
 def validate_auth_user(
         login: str = Form(),
-        password: str = Form()
+        password: str = Form(),
+        session: Session = Depends(create_session)
         ):
     exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid login or password",
     )
     
-    user = Queries.empoloyee_by_login(login=login)
+    user = Queries.empoloyee_by_login(login=login,session=session)
 
     if user is None:
         raise exc
@@ -41,11 +44,11 @@ def auth_user(user: UserSchema = Depends(validate_auth_user)):
         token_type="Bearer"
     )
 
-def get_current_user(creds: HTTPAuthorizationCredentials = Depends(http_bearer)):
+def get_current_user(creds: HTTPAuthorizationCredentials = Depends(http_bearer), session: Session = Depends(create_session)):
     token = creds.credentials
     data = jwt.decode_jwt(token)
     print(data)
-    return Queries.empoloyee_by_login(data.get("login"))
+    return Queries.empoloyee_by_login(data.get("login"),session)
 
 
 @auth.get("/me/")
@@ -67,17 +70,18 @@ def insert_employee(
     password:str = Form(),
     password2:str = Form(),
     id_job:int = Form(),
+    session: Session = Depends(create_session)
     ):
     if password!=password2:
         raise HTTPException(status_code=status.HTTP_418_IM_A_TEAPOT,
                              detail="Your passwords don't match")
     
-    Queries.insert_employee(name,surname,login,jwt.hash_pw(password),id_job)
+    Queries.insert_employee(name,surname,login,jwt.hash_pw(password),id_job,session)
     jwt_payload = {"name":name,
                    "surname":surname,
                    "login":login,
                    "id_job":id_job,
-                   "roots":Queries.job_by_id(id_job).roots
+                   "roots":Queries.job_by_id(id_job,session).roots
                    }
     access_token = jwt.encode_jwt(jwt_payload)
 
@@ -85,4 +89,3 @@ def insert_employee(
         access_token=access_token,
         token_type="Bearer"
     )
-

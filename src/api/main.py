@@ -1,11 +1,13 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from database.queries import Queries
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from routers.auth import auth
 from routers.manager import manager
 from typing import Optional
+from database.setup import create_session
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 
@@ -20,84 +22,85 @@ app.add_middleware(
 )
 
 @app.post('/products/')
-def insert_product(name:str, price: int, id_category:int, quantity_at_storage:int) -> dict:
-    Queries.insert_product(name,price,id_category,quantity_at_storage)
+def insert_product(name:str, price: int, id_category:int, quantity_at_storage:int, session: Session = Depends(create_session)) -> dict:
+    Queries.insert_product(name,price,id_category,quantity_at_storage,session)
     return {"message":"success"}
 
 @app.post("/categories/")
-def insert_category(name:str) -> dict:
-    Queries.insert_category(name)
+def insert_category(name:str, session: Session = Depends(create_session)) -> dict:
+    Queries.insert_category(name,session)
     return{"message":"success"}
 
 @app.get("/products/")
-def all_products():
-    res = Queries.all_products()
+def all_products(session: Session = Depends(create_session)):
+    res = Queries.all_products(session)
     return res
 
 @app.post("/jobs/")
-def insert_job(name: str, roots:int):
-    Queries.insert_job(name,roots)
+def insert_job(name: str, roots:int, session: Session = Depends(create_session)):
+    Queries.insert_job(name,roots,session)
     return {"message":"success"}
 
 @app.post("/sales/")
-def insert_sale(created_at:datetime, id_employee:int, id_product:int, quintity:int):
-    if Queries.insert_sale(created_at, id_employee, id_product, quintity):
+def insert_sale(created_at:datetime, id_employee:int, id_product:int, quintity:int, session: Session = Depends(create_session)):
+    if Queries.insert_sale(created_at, id_employee, id_product, quintity,session):
         return {"message":"success"}
     return {"message":"Something went wrong"}
 
 @app.get("/categories/")
-def all_categories():
-    return Queries.all_categories()
+def all_categories(session: Session = Depends(create_session)):
+    return Queries.all_categories(session)
 
 @app.get("/jobs/")
-def all_jobs():
-    return Queries.all_jobs()
+def all_jobs(session: Session = Depends(create_session)):
+    return Queries.all_jobs(session)
 
 @app.get("/receipts/")
-def all_receipts():
-    return Queries.all_receipts()
+def all_receipts(session: Session = Depends(create_session)):
+    return Queries.all_receipts(session)
 
 @app.get("/employees/")
-def all_employees():
-    return Queries.all_employees()
+def all_employees(session: Session = Depends(create_session)):
+    return Queries.all_employees(session)
 
 @app.get("/sales/")
-def all_sales():
-    return Queries.all_sales()
+def all_sales(session: Session = Depends(create_session)):
+    return Queries.all_sales(session)
 
 @app.patch("/employees/")
-def add_boss(id:int,boss_id:int):
-    return Queries.add_boss(id,boss_id)
+def add_boss(id:int,boss_id:int, session: Session = Depends(create_session)):
+    return Queries.add_boss(id,boss_id,session)
 
 @app.patch("/products/")
 def update_product(
     product_id:int,
     price: Optional[int] = None,
-    quantity_at_storage: Optional[int] = None
+    quantity_at_storage: Optional[int] = None,
+    session: Session = Depends(create_session)
     ):
-    Queries.update_product(product_id,price,quantity_at_storage)
+    Queries.update_product(product_id,price,quantity_at_storage,session)
     return {"massege":"success"}
 
 @app.delete("/products/")
-def delete_product(id:int):
-    Queries.delete_product(id)
+def delete_product(id:int, session: Session = Depends(create_session)):
+    Queries.delete_product(id,session)
     return {"massege":"success"}
 
 @app.get("/products/{id}")
-def product_by_id(id:int):
-    return Queries.get_product_by_id(id)
+def product_by_id(id:int, session: Session = Depends(create_session)):
+    return Queries.get_product_by_id(id,session)
 
 @app.get("/products/filter/")
-def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8):
-    return Queries.filtered_products(category_id, min_price, max_price)
+def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8, session: Session = Depends(create_session)):
+    return Queries.filtered_products(category_id, min_price, max_price,session)
 
 @app.get("/products/category/")
-def products_by_category(category_id:int):
-    return Queries.products_by_category(category_id)
+def products_by_category(category_id:int, session: Session = Depends(create_session)):
+    return Queries.products_by_category(category_id,session)
 
 @app.get("/employee/{id}/sales")
-def employee_sales(id:int):
-    return Queries.employee_sales(id)
+def employee_sales(id:int, session: Session = Depends(create_session)):
+    return Queries.employee_sales(id,session)
 
 if __name__ == "__main__":
     uvicorn.run(app)

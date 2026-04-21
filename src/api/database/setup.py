@@ -13,7 +13,7 @@ def drop_db():
     Base.metadata.drop_all(engine)
 
 Session = sessionmaker(engine)
-def create_conn():
+def create_session():
     session = Session()
     return session
     
