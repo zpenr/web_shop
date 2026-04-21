@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from routers.auth import auth
 from routers.manager import manager
+from typing import Optional
 
 app = FastAPI()
 
@@ -67,6 +68,36 @@ def all_sales():
 @app.patch("/employees/")
 def add_boss(id:int,boss_id:int):
     return Queries.add_boss(id,boss_id)
+
+@app.patch("/products/")
+def update_product(
+    product_id:int,
+    price: Optional[int] = None,
+    quantity_at_storage: Optional[int] = None
+    ):
+    Queries.update_product(product_id,price,quantity_at_storage)
+    return {"massege":"success"}
+
+@app.delete("/products/")
+def delete_product(id:int):
+    Queries.delete_product(id)
+    return {"massege":"success"}
+
+@app.get("/products/{id}")
+def product_by_id(id:int):
+    return Queries.get_product_by_id(id)
+
+@app.get("/products/filter/")
+def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8):
+    return Queries.filtered_products(category_id, min_price, max_price)
+
+@app.get("/products/category/")
+def products_by_category(category_id:int):
+    return Queries.products_by_category(category_id)
+
+@app.get("/employee/{id}/sales")
+def employee_sales(id:int):
+    return Queries.employee_sales(id)
 
 if __name__ == "__main__":
     uvicorn.run(app)

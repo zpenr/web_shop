@@ -131,7 +131,56 @@ class Queries:
             session.delete(employee)
             session.commit()
     
+    @staticmethod
     def root_by_id(id:int):
         with Session() as session :
-            query = select(Jobs.roots).join(Employees, Jobs.id == Employees.id_job)
+            query = select(Jobs.roots).join(Employees, Jobs.id == Employees.id_job).where(Employees.id == id)
             return session.execute(query).scalar_one()
+        
+    def get_product_by_id(id:int):
+        with Session() as session:
+            product = select(Products).where(Products.id == id)
+            return session.execute(product).scalar_one()
+        
+    @staticmethod
+    def update_product(id:int, price:int|None, quantity_at_storage:int|None):
+        with Session() as session:
+            product = session.query(Products).with_for_update().filter(Products.id == id).first()
+            if price is not None:
+                product.price = price
+            if quantity_at_storage is not None:
+                product.quantity_at_storage = quantity_at_storage
+            session.commit()
+
+    @staticmethod
+    def delete_product(id:int):
+        with Session() as session:
+            product = session.query(Employees).filter(Products.id == id).first()
+            session.delete(product)
+            session.commit()
+    
+    @staticmethod
+    def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8):
+        with Session() as session:
+            products = (select(Products)
+                .where(
+                    and_(
+                        Products.id_category == category_id,
+                        Products.price >= min_price,
+                        Products.price <= max_price
+                        )
+                    ))
+            return session.execute(products).scalars().all()
+    
+    @staticmethod
+    def products_by_category(id_category: int):
+        with Session() as session:
+            products = select(Products).where(Products.id_category == id_category)
+            return session.execute(products).scalars().all()
+
+    @staticmethod    
+    def employee_sales(employee_id:int):
+        with Session() as session:
+            sales = select(Sales).join(Receipts, Receipts.id == Sales.id_receipt).where(Receipts.id_employee == employee_id)
+            return session.execute(sales).scalars().all()
+        
