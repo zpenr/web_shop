@@ -15,6 +15,14 @@ def drop_db():
 Session = sessionmaker(engine)
 def create_session():
     session = Session()
-    return session
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise 
+    finally:
+        session.close()
+
     
 create_db_and_tables()

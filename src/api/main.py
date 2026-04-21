@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends,HTTPException,status
 from database.queries import Queries
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,9 +43,12 @@ def insert_job(name: str, roots:int, session: Session = Depends(create_session))
 
 @app.post("/sales/")
 def insert_sale(created_at:datetime, id_employee:int, id_product:int, quintity:int, session: Session = Depends(create_session)):
-    if Queries.insert_sale(created_at, id_employee, id_product, quintity,session):
+    try:
+        Queries.insert_sale_with_storage_check(created_at,id_employee,id_product,quintity,session)
         return {"message":"success"}
-    return {"message":"Something went wrong"}
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                             detail="Something went wrong")
 
 @app.get("/categories/")
 def all_categories(session: Session = Depends(create_session)):

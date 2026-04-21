@@ -14,43 +14,45 @@ class Queries:
     def insert_product(name:str, price: int, id_category:int, quantity_at_storage:int, session: Session)->None:
         product = Products(name=name, price=price, id_category=id_category,quantity_at_storage=quantity_at_storage)
         session.add(product)
-        session.commit()
     
     @staticmethod
     def insert_category(name:str, session: Session) -> None:
         category = Categories(name=name)
         session.add(category)
-        session.commit()
     
     @staticmethod
     def insert_job(name: str, roots:int, session: Session) -> None:
         job = Jobs(name=name, roots=roots)
         session.add(job)
-        session.commit()
 
     @staticmethod
     def insert_employee(name:str, surname:str, login:str, password:str, id_job:int, session: Session) -> None:
         employee = Employees(name=name, surname=surname,login=login,password=password,id_job=id_job)
         session.add(employee)
-        session.commit()
 
     @staticmethod
     def all_employees(session: Session):
         return session.execute(select(Employees)).scalars().all()
         
     @staticmethod
-    def insert_sale(created_at:datetime, id_employee:int, id_product:int, quintity:int, session: Session) -> bool:
-        try:
+    def insert_sale_with_storage_check(created_at:datetime, id_employee:int, id_product:int, quintity:int, session: Session) -> bool:
+        
+        product = session.get(Products, id_product)
+        
+        if product.quantity_at_storage >= quintity:
+            product.quantity_at_storage -= quintity
+            
             receipt = Receipts(created_at=created_at, id_employee=id_employee)
             session.add(receipt)
             session.flush()
+            
             id_receipt = receipt.id
             sale = Sales(id_receipt=id_receipt, id_product=id_product,quintity=quintity)
+            
             session.add(sale)
-            session.commit()
             return True
-        except: #noqa
-            session.rollback()
+        
+        else:
             return False
 
     @staticmethod       
@@ -72,9 +74,7 @@ class Queries:
     def add_boss(id:int,boss_id:int, session: Session):
         employee = session.query(Employees).with_for_update().filter(Employees.id == id).first()
         employee.boss = boss_id
-        session.commit()
             
-
     @staticmethod  
     def all_jobs(session: Session):
         query = select(Jobs)
@@ -111,13 +111,13 @@ class Queries:
     def dismiss(id:int, boss_id:int, session: Session):
         employee = session.query(Employees).filter(and_(Employees.id == id, Employees.boss == boss_id)).first()
         session.delete(employee)
-        session.commit()
     
     @staticmethod
     def root_by_id(id:int, session: Session):
         query = select(Jobs.roots).join(Employees, Jobs.id == Employees.id_job).where(Employees.id == id)
         return session.execute(query).scalar_one()
-        
+
+    @staticmethod  
     def get_product_by_id(id:int, session: Session):
         product = select(Products).where(Products.id == id)
         return session.execute(product).scalar_one()
@@ -129,13 +129,11 @@ class Queries:
             product.price = price
         if quantity_at_storage is not None:
             product.quantity_at_storage = quantity_at_storage
-        session.commit()
 
     @staticmethod
     def delete_product(id:int, session: Session):
         product = session.query(Employees).filter(Products.id == id).first()
         session.delete(product)
-        session.commit()
     
     @staticmethod
     def filtered_products(category_id:int|None, min_price: float, max_price:float, session: Session):
