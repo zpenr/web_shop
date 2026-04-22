@@ -1,4 +1,5 @@
 import uvicorn
+import schemas
 from fastapi import FastAPI, Depends,HTTPException,status
 from database.queries import Queries
 from datetime import datetime
@@ -8,6 +9,8 @@ from routers.manager import manager
 from typing import Optional
 from database.setup import create_session
 from sqlalchemy.orm import Session
+from routers.auth import get_current_user
+from database.models import Employees
 
 app = FastAPI()
 
@@ -31,10 +34,11 @@ def insert_category(name:str, session: Session = Depends(create_session)) -> dic
     Queries.insert_category(name,session)
     return{"message":"success"}
 
-@app.get("/products/")
+@app.get("/products/",response_model=list[schemas.ProductSchema])
 def all_products(session: Session = Depends(create_session)):
-    res = Queries.all_products(session)
-    return res
+    products_orm = Queries.all_products(session)
+    products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+    return products_schema
 
 @app.post("/jobs/")
 def insert_job(name: str, roots:int, session: Session = Depends(create_session)):
@@ -42,37 +46,53 @@ def insert_job(name: str, roots:int, session: Session = Depends(create_session))
     return {"message":"success"}
 
 @app.post("/sales/")
-def insert_sale(created_at:datetime, id_employee:int, id_product:int, quintity:int, session: Session = Depends(create_session)):
+def insert_sale(
+    created_at: datetime, 
+    id_product: int, 
+    quintity: int, 
+    session: Session = Depends(create_session),
+    current_user: Employees = Depends(get_current_user)):
     try:
-        Queries.insert_sale_with_storage_check(created_at,id_employee,id_product,quintity,session)
+        Queries.insert_sale_with_storage_check(created_at,current_user.id,id_product,quintity,session)
         return {"message":"success"}
     except Exception:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                              detail="Something went wrong")
 
-@app.get("/categories/")
+@app.get("/categories/",response_model=list[schemas.CategorySchema])
 def all_categories(session: Session = Depends(create_session)):
-    return Queries.all_categories(session)
+    categories_orm = Queries.all_categories(session)
+    categories_schema = [schemas.CategorySchema.model_validate(row) for row in categories_orm]
+    return categories_schema
 
-@app.get("/jobs/")
+@app.get("/jobs/",response_model=list[schemas.JobSchema])
 def all_jobs(session: Session = Depends(create_session)):
-    return Queries.all_jobs(session)
+    jobs_orm = Queries.all_jobs(session)
+    jobs_schema = [schemas.JobSchema.model_validate(row) for row in jobs_orm]
+    return jobs_schema
 
-@app.get("/receipts/")
+@app.get("/receipts/",response_model=list[schemas.ReceiptSchema])
 def all_receipts(session: Session = Depends(create_session)):
-    return Queries.all_receipts(session)
+    receipts_orm = Queries.all_receipts(session)
+    receipts_schema = [schemas.ReceiptSchema.model_validate(row) for row in receipts_orm]
+    return receipts_schema
 
-@app.get("/employees/")
+@app.get("/employees/", response_model=list[schemas.UserPublicSchema])
 def all_employees(session: Session = Depends(create_session)):
-    return Queries.all_employees(session)
+    employees_orm = Queries.all_employees(session)
+    employees_schema = [schemas.UserPublicSchema.model_validate(row) for row in employees_orm]
+    return employees_schema
 
-@app.get("/sales/")
+@app.get("/sales/",response_model=list[schemas.SaleSchema])
 def all_sales(session: Session = Depends(create_session)):
-    return Queries.all_sales(session)
+    sales_orm = Queries.all_sales(session)
+    sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
+    return sales_schema
 
 @app.patch("/employees/")
 def add_boss(id:int,boss_id:int, session: Session = Depends(create_session)):
-    return Queries.add_boss(id,boss_id,session)
+    Queries.add_boss(id,boss_id,session)
+    return {"message":"success"}
 
 @app.patch("/products/")
 def update_product(
@@ -89,19 +109,19 @@ def delete_product(id:int, session: Session = Depends(create_session)):
     Queries.delete_product(id,session)
     return {"massege":"success"}
 
-@app.get("/products/{id}")
+@app.get("/products/{id}", response_model=schemas.ProductSchema)
 def product_by_id(id:int, session: Session = Depends(create_session)):
     return Queries.get_product_by_id(id,session)
 
-@app.get("/products/filter/")
+@app.get("/products/filter/", response_model=list[schemas.ProductSchema])
 def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8, session: Session = Depends(create_session)):
     return Queries.filtered_products(category_id, min_price, max_price,session)
 
-@app.get("/products/category/")
+@app.get("/products/category/", response_model=list[schemas.ProductSchema])
 def products_by_category(category_id:int, session: Session = Depends(create_session)):
     return Queries.products_by_category(category_id,session)
 
-@app.get("/employee/{id}/sales")
+@app.get("/employee/{id}/sales", response_model=list[schemas.SaleSchema])
 def employee_sales(id:int, session: Session = Depends(create_session)):
     return Queries.employee_sales(id,session)
 

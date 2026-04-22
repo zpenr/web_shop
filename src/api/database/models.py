@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, validates
+from sqlalchemy.orm import DeclarativeBase,relationship, Mapped, mapped_column, validates
 from sqlalchemy import ForeignKey, DateTime
 
 class Base(DeclarativeBase):
@@ -12,6 +12,8 @@ class Categories(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
 
+    products: Mapped[list["Products"]] = relationship(back_populates="category")
+
 class Products(Base):
     __tablename__ = "products"
 
@@ -20,6 +22,9 @@ class Products(Base):
     price: Mapped[int]
     id_category: Mapped[int] = mapped_column(ForeignKey("categories.id"))
     quantity_at_storage: Mapped[int]
+
+    sales: Mapped[list["Sales"]] = relationship(back_populates="product")
+    category: Mapped["Categories"] = relationship(back_populates="products")
 
     @validates("price")
     def validata_price(self, key, price):
@@ -45,12 +50,17 @@ class Employees(Base):
     id_job: Mapped[int] = mapped_column(ForeignKey("jobs.id"))
     boss: Mapped[int|None]
 
+    receipts: Mapped[list["Receipts"]] = relationship(back_populates="employee")
+
 class Receipts(Base):
     __tablename__ = "receipts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
     id_employee: Mapped[int] = mapped_column(ForeignKey("employees.id"))
+
+    employee: Mapped["Employees"] = relationship(back_populates="receipts")
+    sale: Mapped["Sales"] = relationship(back_populates="receipt")
 
 class Sales(Base):
     __tablename__ = "sales"
@@ -59,3 +69,6 @@ class Sales(Base):
     id_receipt: Mapped[int] = mapped_column(ForeignKey("receipts.id"))
     id_product: Mapped[int] = mapped_column(ForeignKey("products.id"))
     quintity: Mapped[int]
+
+    receipt: Mapped["Receipts"] = relationship(back_populates="sale")
+    product: Mapped["Products"] = relationship(back_populates="sales")

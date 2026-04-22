@@ -1,13 +1,13 @@
 from sqlalchemy import select, Sequence, and_
 from database.models import Products, Categories, Jobs, Employees, Receipts, Sales
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 
 class Queries:
 
     @staticmethod
     def all_products(session: Session) -> Sequence[Products]:
-        query = select(Products)
+        query = select(Products).options(joinedload(Products.category))
         return session.execute(query).scalars().all()
     
     @staticmethod
@@ -82,12 +82,17 @@ class Queries:
 
     @staticmethod 
     def all_sales(session: Session):
-        query = select(Sales)
+        query = (select(Sales)
+                 .options(
+                     joinedload(Sales.receipt).joinedload(Receipts.employee),
+                     joinedload(Sales.product).joinedload(Products.category)
+                     )
+                )
         return session.execute(query).scalars().all()
     
     @staticmethod
     def all_receipts(session: Session):
-        query = select(Receipts)
+        query = select(Receipts).options(joinedload(Receipts.employee))
         return session.execute(query).scalars().all()
 
     @staticmethod
@@ -104,7 +109,13 @@ class Queries:
     def get_childrens_sales(boss_id:int, session: Session):
         ids = select(Employees.id).where(Employees.boss == boss_id).scalar_subquery()
         subquery = select(Receipts.id).where(Receipts.id_employee.in_(ids)).scalar_subquery()
-        query = select(Sales).where(Sales.id_receipt.in_(subquery))
+        query = (select(Sales)
+                 .where(Sales.id_receipt.in_(subquery))
+                 .options(
+                     joinedload(Sales.receipt).joinedload(Receipts.employee),
+                     joinedload(Sales.product).joinedload(Products.category)
+                     )
+                 )
         return session.execute(query).scalars().all()
 
     @staticmethod
@@ -119,7 +130,10 @@ class Queries:
 
     @staticmethod  
     def get_product_by_id(id:int, session: Session):
-        product = select(Products).where(Products.id == id)
+        product = (select(Products)
+                   .where(Products.id == id)
+                   .options(joinedload(Products.category))
+                   )
         return session.execute(product).scalar_one()
         
     @staticmethod
@@ -144,15 +158,27 @@ class Queries:
                     Products.price >= min_price,
                     Products.price <= max_price
                     )
-                ))
+                )
+                .options(joinedload(Products.category))
+                )
         return session.execute(products).scalars().all()
     
     @staticmethod
     def products_by_category(id_category: int, session: Session):
-        products = select(Products).where(Products.id_category == id_category)
+        products = (select(Products)
+                    .where(Products.id_category == id_category)
+                    .options(joinedload(Products.category))
+                    )
         return session.execute(products).scalars().all()
 
     @staticmethod    
     def employee_sales(employee_id:int, session: Session):
-        sales = select(Sales).join(Receipts, Receipts.id == Sales.id_receipt).where(Receipts.id_employee == employee_id)
+        sales = (select(Sales)
+                 .join(Receipts, Receipts.id == Sales.id_receipt)
+                 .where(Receipts.id_employee == employee_id)
+                 .options(
+                     joinedload(Sales.receipt).joinedload(Receipts.employee),
+                     joinedload(Sales.product).joinedload(Products.category)
+                     )
+                 )
         return session.execute(sales).scalars().all()

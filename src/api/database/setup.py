@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from database.models import Base, Categories  # noqa: F401
+from database.models import Base, Categories  # noqa
 from config import settings
 DB_URL = settings.get_db_url()
 
