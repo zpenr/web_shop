@@ -7,6 +7,7 @@ class TokenSchema(BaseModel):
     model_config = {"from_attributes": True}
 
 class UserPublicSchema(BaseModel):
+    id:int
     name: str 
     surname: str
     id_job:int
@@ -19,7 +20,7 @@ class UserSchema(UserPublicSchema):
 
 class JobSchema(BaseModel):
     id: int
-    name: int
+    name: str
     roots: int
     model_config = {"from_attributes": True}
 

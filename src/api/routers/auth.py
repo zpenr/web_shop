@@ -3,7 +3,7 @@ from fastapi import (APIRouter,
                      status, Depends, 
                     )
 from database.queries import Queries
-from schemas import UserSchema, TokenSchema
+from schemas import UserSchema, TokenSchema, UserPublicSchema
 from utils import jwt
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from database.setup import create_session
@@ -47,13 +47,12 @@ def auth_user(user: UserSchema = Depends(validate_auth_user)):
 def get_current_user(creds: HTTPAuthorizationCredentials = Depends(http_bearer), session: Session = Depends(create_session)):
     token = creds.credentials
     data = jwt.decode_jwt(token)
-    print(data)
     return Queries.empoloyee_by_login(data.get("login"),session)
 
 
-@auth.get("/me/")
+@auth.get("/me/",response_model=UserPublicSchema)
 def user_self_info(user = Depends(get_current_user)):
-    return user
+    return UserPublicSchema.model_validate(user)
 
 @auth.get("/permission/")
 def is_permission(roots,user = Depends(get_current_user)):
@@ -62,7 +61,7 @@ def is_permission(roots,user = Depends(get_current_user)):
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                         detail="Permission denied")
     
-@auth.post("/register/")
+@auth.post("/register/", response_model=TokenSchema)
 def insert_employee(
     name:str = Form(),
     surname:str = Form(),

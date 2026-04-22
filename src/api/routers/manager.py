@@ -2,15 +2,20 @@ from fastapi import APIRouter, Depends
 from database.queries import Queries
 from database.setup import create_session
 from sqlalchemy.orm import Session
+from schemas import UserPublicSchema, SaleSchema
 manager = APIRouter(tags=["manager"])
 
-@manager.get("/childrens/")
-def get_all_childrens(id:int, session: Session = Depends(create_session)):
-    return Queries.get_childrens(id,session)
+@manager.get("/childrens/", response_model=list[UserPublicSchema])
+def get_all_childrens(boss_id:int, session: Session = Depends(create_session)):
+    employees_orm = Queries.get_childrens(boss_id,session)
+    employees_schema = [UserPublicSchema.model_validate(row) for row in employees_orm]
+    return employees_schema
 
-@manager.get("/sales/")
+@manager.get("/sales/", response_model=list[SaleSchema])
 def get_childrens_sales(boss_id:int, session: Session = Depends(create_session)):
-    return Queries.get_childrens_sales(boss_id,session)
+    sales_orm = Queries.get_childrens_sales(boss_id,session)
+    sales_schema = [SaleSchema.model_validate(row) for row in sales_orm]
+    return sales_schema
 
 @manager.delete("/childrens/")
 def dismiss_employee(id:int, boss_id:int, session: Session = Depends(create_session)):

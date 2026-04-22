@@ -115,15 +115,21 @@ def product_by_id(id:int, session: Session = Depends(create_session)):
 
 @app.get("/products/filter/", response_model=list[schemas.ProductSchema])
 def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8, session: Session = Depends(create_session)):
-    return Queries.filtered_products(category_id, min_price, max_price,session)
+    products_orm = Queries.filtered_products(category_id, min_price, max_price,session)
+    products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+    return products_schema
 
 @app.get("/products/category/", response_model=list[schemas.ProductSchema])
 def products_by_category(category_id:int, session: Session = Depends(create_session)):
-    return Queries.products_by_category(category_id,session)
+    products_orm = Queries.products_by_category(category_id,session)
+    products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+    return products_schema
 
 @app.get("/employee/{id}/sales", response_model=list[schemas.SaleSchema])
 def employee_sales(id:int, session: Session = Depends(create_session)):
-    return Queries.employee_sales(id,session)
+    sales_orm = Queries.employee_sales(id,session)
+    sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
+    return sales_schema
 
 if __name__ == "__main__":
     uvicorn.run(app)
