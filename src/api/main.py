@@ -131,5 +131,18 @@ def employee_sales(id:int, session: Session = Depends(create_session)):
     sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
     return sales_schema
 
+@app.get("/sales/filter/", response_model=list[schemas.SaleSchema])
+def sales_products(min_sum: int | None = None,
+            max_sum: int | None = None,
+            min_date: datetime | None = None,
+            max_date: datetime | None = None,
+            product_id: int | None = None,
+            employee_id: int | None = None, 
+            session: Session = Depends(create_session)):
+    
+    sales_orm = Queries.filtered_sales(session,min_sum,max_sum,min_date,max_date,product_id, employee_id)
+    sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
+    return sales_schema
+
 if __name__ == "__main__":
     uvicorn.run(app)

@@ -182,3 +182,50 @@ class Queries:
                      )
                  )
         return session.execute(sales).scalars().all()
+    
+    @staticmethod
+    def filtered_sales(
+            session: Session,
+            min_sum: int | None = None,
+            max_sum: int | None = None,
+            min_date: datetime | None = None,
+            max_date: datetime | None = None,
+            product_id: int | None = None,
+            employee_id: int | None = None,):
+        
+        query = select(Sales)
+
+        need_product_join = (min_sum is not None or max_sum is not None or product_id is not None)
+        need_receipt_join = (min_date is not None or max_date is not None or employee_id is not None)
+        
+        if need_product_join:
+            query = query.join(Sales.product)
+        if need_receipt_join:
+            query = query.join(Sales.receipt)
+            if employee_id is not None:
+                query = query.join(Receipts.employee)
+
+            if product_id is not None:
+                query = query.where(Sales.id_product == product_id)
+
+        if min_sum is not None:
+            query = query.where(Products.price * Sales.quintity >= min_sum)
+
+        if max_sum is not None:
+            query = query.where(Products.price * Sales.quintity <= max_sum)
+
+        if min_date is not None:
+            query = query.where(Receipts.created_at >= min_date)
+
+        if max_date is not None:
+            query = query.where(Receipts.created_at <= max_date)
+        
+        if employee_id is not None:
+            query = query.where(Employees.id == employee_id)
+
+        query = query.options(
+                     joinedload(Sales.receipt).joinedload(Receipts.employee),
+                     joinedload(Sales.product).joinedload(Products.category)
+                     )
+
+        return session.execute(query).unique().scalars().all()
