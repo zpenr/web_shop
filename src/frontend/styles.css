@@ -1,0 +1,20 @@
+/* Дополнительные стили */
+.card {
+    margin-bottom: 1rem;
+}
+.table th, .table td {
+    vertical-align: middle;
+}
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+.btn-action {
+    margin-right: 5px;
+}
+.filter-form {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
