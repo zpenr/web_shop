@@ -12,7 +12,9 @@ dependencies = [
     "uvicorn",
     "sqlalchemy",
     "pydantic",
-    "pydantic-settings"
+    "pydantic-settings",
+    "pyjwt[crypto]",
+    "bcrypt",
 ]
 
 [project.optional-dependencies]
