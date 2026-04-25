@@ -1,5 +1,5 @@
 // Конфигурация API
-const API_BASE = 'http://localhost:8000'; // Замените на ваш адрес
+const API_BASE = '/api'; // Замените на ваш адрес
 let authToken = localStorage.getItem('access_token') || null;
 let currentUser = null;
 
