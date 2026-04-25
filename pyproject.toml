@@ -1,0 +1,23 @@
+[project]
+name = "web-shop"
+version = "0.1.0"
+description = "A simple web shop application."
+authors = [
+    { name = "Myasnikov Vadim", email = "zpenr@bk.ru" }
+]
+requires-python = ">=3.12.3"
+dependencies = [
+    "fastapi",
+    "python-multipart",
+    "uvicorn",
+    "sqlalchemy",
+    "pydantic",
+    "pydantic-settings"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx"
+]
