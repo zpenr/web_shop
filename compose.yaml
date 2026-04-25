@@ -1,0 +1,24 @@
+services:
+  api:
+    build: 
+        context: .
+        dockerfile: src/api/Dockerfile
+    image: api-web-site
+    container_name: api-web-site
+    command: "python main.py"
+    env_file:
+      - .env
+    volumes:
+      - ./src/api:/project
+      - ./certs:/certs  
+    ports:
+      - "8000:8000"
+
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./src/frontend:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
