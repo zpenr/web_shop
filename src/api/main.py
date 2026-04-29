@@ -10,7 +10,6 @@ from typing import Optional
 from api.database.setup import create_session
 from sqlalchemy.orm import Session
 from api.routers.auth import get_current_user
-from api.database.models import Employees
 from api.utils.jwt import get_roots
 
 app = FastAPI()
@@ -53,17 +52,21 @@ def insert_job(name: str, root_id:int, session: Session = Depends(create_session
     job_schema = schemas.JobSchema.model_validate(job_orm)
     return job_schema
 
+@app.post("/receipts/", response_model=schemas.ReceiptSchema)
+def create_receipt(created_at:datetime, user: schemas.UserPublicSchema = Depends(get_current_user), session: Session = Depends(create_session)):
+    receipt = Queries.create_rececipt(created_at=created_at, id_employee=user.id, session=session)
+    return schemas.ReceiptSchema.model_validate(receipt)
+
 @app.post("/sales/")
 def insert_sale(
-    created_at: datetime, 
     id_product: int, 
     quintity: int, 
-    session: Session = Depends(create_session),
-    current_user: Employees = Depends(get_current_user), 
+    receipt_id:int,
+    session: Session = Depends(create_session), 
     roots: schemas.RootSchema = Depends(get_roots)):
     try:
         if roots.make_sales:
-            Queries.insert_sale_with_storage_check(created_at,current_user.id,id_product,quintity,session)
+            Queries.insert_sale_with_storage_check(id_product,quintity,receipt_id,session)
             return {"message":"success"}
         else:
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
@@ -180,6 +183,12 @@ def all_roots(session:Session = Depends(create_session)):
     roots_orm = Queries.get_all_roots(session)
     roots_schema = [schemas.RootSchema.model_validate(row) for row in roots_orm]
     return roots_schema
+
+@app.get("/sales/receipt/{id_receipt}", response_model=list[schemas.SaleSchema])
+def sales_by_receipt(id_receipt:int, session: Session = Depends(create_session)):
+    sales_orm = Queries.sales_by_receipt(id_receipt, session)
+    sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
+    return sales_schema
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

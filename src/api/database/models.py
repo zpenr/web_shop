@@ -62,7 +62,7 @@ class Receipts(Base):
     id_employee: Mapped[int] = mapped_column(ForeignKey("employees.id"))
 
     employee: Mapped["Employees"] = relationship(back_populates="receipts")
-    sale: Mapped["Sales"] = relationship(back_populates="receipt")
+    sale: Mapped[list["Sales"]] = relationship(back_populates="receipt")
 
 class Sales(Base):
     __tablename__ = "sales"

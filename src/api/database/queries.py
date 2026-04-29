@@ -23,14 +23,8 @@ class Queries:
         session.add(category)
     
     @staticmethod
-    def insert_job(name: str, root_id:int, session: Session) -> Jobs:
-        permisions = Queries.root_by_id(root_id, session)
-        root_id = Queries.insert_root(
-            permisions.make_sales, permisions.add_categories,
-            permisions.add_products, permisions.redact_products,
-            permisions.add_jobs, permisions.add_boss, session)
-        
-        job = Jobs(name=name, root_id=root_id.id)
+    def insert_job(name: str, root_id:int, session: Session) -> Jobs:               
+        job = Jobs(name=name, root_id=root_id)
         session.add(job)
         session.flush()
         return job
@@ -45,19 +39,15 @@ class Queries:
         return session.execute(select(Employees)).scalars().all()
         
     @staticmethod
-    def insert_sale_with_storage_check(created_at:datetime, id_employee:int, id_product:int, quintity:int, session: Session) -> bool:
+    def insert_sale_with_storage_check(id_product:int, quintity:int, receipt_id:int, session: Session) -> bool:
         
         product = session.get(Products, id_product)
         
         if product.quantity_at_storage >= quintity:
             product.quantity_at_storage -= quintity
             
-            receipt = Receipts(created_at=created_at, id_employee=id_employee)
-            session.add(receipt)
-            session.flush()
-            
-            id_receipt = receipt.id
-            sale = Sales(id_receipt=id_receipt, id_product=id_product,quintity=quintity)
+
+            sale = Sales(id_receipt=receipt_id, id_product=id_product,quintity=quintity)
             
             session.add(sale)
             return True
@@ -268,3 +258,15 @@ class Queries:
         session.flush()
 
         return roots
+    
+    @staticmethod
+    def create_rececipt(created_at: datetime, id_employee: int, session: Session):
+        receipt = Receipts(created_at=created_at,id_employee=id_employee)
+        session.add(receipt)
+        session.flush()
+        return receipt
+    
+    @staticmethod
+    def sales_by_receipt(receipt_id:int, session:Session):
+        query = select(Sales).join(Receipts, Receipts.id==Sales.id_receipt).where(Receipts.id == receipt_id)
+        return session.execute(query).scalars().all()
