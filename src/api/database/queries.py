@@ -4,7 +4,7 @@ from api.database.models import (
                     Employees, Receipts, Sales, Roots)
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
-from api.schemas import RootSchema
+
 class Queries:
 
     @staticmethod
@@ -23,14 +23,17 @@ class Queries:
         session.add(category)
     
     @staticmethod
-    def insert_job(name: str, permisions:RootSchema, session: Session) -> None:
+    def insert_job(name: str, root_id:int, session: Session) -> Jobs:
+        permisions = Queries.root_by_id(root_id, session)
         root_id = Queries.insert_root(
             permisions.make_sales, permisions.add_categories,
             permisions.add_products, permisions.redact_products,
             permisions.add_jobs, permisions.add_boss, session)
         
-        job = Jobs(name=name, root_id=root_id)
+        job = Jobs(name=name, root_id=root_id.id)
         session.add(job)
+        session.flush()
+        return job
 
     @staticmethod
     def insert_employee(name:str, surname:str, login:str, password:str, id_job:int, session: Session) -> None:
@@ -233,7 +236,11 @@ class Queries:
         return session.execute(query).unique().scalars().all()
     
     @staticmethod
-    def root_by_id(root_id: int, session: Session):
+    def get_all_roots(session:Session):
+        return session.execute(select(Roots)).scalars().all()
+    
+    @staticmethod
+    def root_by_id(root_id: int, session: Session) -> Roots:
         return session.execute(select(Roots).where(Roots.id == root_id)).scalar_one()
     
     @staticmethod
@@ -251,7 +258,7 @@ class Queries:
                     redact_products: bool,
                     add_jobs: bool,
                     add_boss: bool,
-                    session:Session) -> int:
+                    session:Session) -> Roots:
         roots = Roots(make_sales=make_sales,
                       add_categories=add_categories,
                       add_products=add_products,
@@ -260,4 +267,4 @@ class Queries:
         session.add(roots)
         session.flush()
 
-        return roots.id
+        return roots

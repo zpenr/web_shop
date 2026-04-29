@@ -51,9 +51,12 @@ class SaleSchema(BaseModel):
     model_config = {"from_attributes": True}
 
 class RootSchema(BaseModel):
+    id: int|None = None
     make_sales: bool
     add_categories: bool
     add_products: bool
     redact_products: bool
     add_jobs: bool
     add_boss: bool
+
+    model_config = {"from_attributes": True}

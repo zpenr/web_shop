@@ -47,10 +47,11 @@ def all_products(session: Session = Depends(create_session)):
     products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
     return products_schema
 
-@app.post("/jobs/")
-def insert_job(name: str, roots:int, session: Session = Depends(create_session)):
-    Queries.insert_job(name,roots,session)
-    return {"message":"success"}
+@app.post("/jobs/", response_model=schemas.JobSchema)
+def insert_job(name: str, root_id:int, session: Session = Depends(create_session)):
+    job_orm = Queries.insert_job(name,root_id,session)
+    job_schema = schemas.JobSchema.model_validate(job_orm)
+    return job_schema
 
 @app.post("/sales/")
 def insert_sale(
@@ -168,11 +169,17 @@ def sales_products(min_sum: int | None = None,
 
 @app.post("/roots/")
 def add_roots(permisions: schemas.RootSchema, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
-    Queries.insert_root(
+    root_orm = Queries.insert_root(
         permisions.make_sales, permisions.add_categories,
         permisions.add_products, permisions.redact_products,
         permisions.add_jobs, permisions.add_boss, session)
-    return {"message":"success"}
+    return schemas.RootSchema.model_validate(root_orm)
+
+@app.get("/roots/",response_model=list[schemas.RootSchema])
+def all_roots(session:Session = Depends(create_session)):
+    roots_orm = Queries.get_all_roots(session)
+    roots_schema = [schemas.RootSchema.model_validate(row) for row in roots_orm]
+    return roots_schema
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
