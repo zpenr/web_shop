@@ -15,6 +15,7 @@ dependencies = [
     "pydantic-settings",
     "pyjwt[crypto]",
     "bcrypt",
+    "alembic"
 ]
 
 [project.optional-dependencies]

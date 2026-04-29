@@ -1,3 +1,4 @@
+from __future__ import annotations 
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -11,6 +12,7 @@ class UserPublicSchema(BaseModel):
     name: str 
     surname: str
     id_job:int
+    boss: int | None = None
     model_config = {"from_attributes": True}
 
 class UserSchema(UserPublicSchema):
@@ -21,18 +23,12 @@ class UserSchema(UserPublicSchema):
 class JobSchema(BaseModel):
     id: int
     name: str
-    roots: int
+    root_id: int
     model_config = {"from_attributes": True}
 
 class CategorySchema(BaseModel):
     id: int
     name: str
-    model_config = {"from_attributes": True}
-
-class ReceiptSchema(BaseModel):
-    id:int
-    created_at: datetime
-    employee: UserPublicSchema
     model_config = {"from_attributes": True}
 
 class ProductSchema(BaseModel):
@@ -46,6 +42,24 @@ class ProductSchema(BaseModel):
 class SaleSchema(BaseModel):
     id:int
     quintity:int
-    receipt: ReceiptSchema
+    id_receipt:int
     product: ProductSchema
+    receipt: ReceiptSchema
+    model_config = {"from_attributes": True}
+
+class ReceiptSchema(BaseModel):
+    id:int
+    created_at: datetime
+    employee: UserPublicSchema
+    model_config = {"from_attributes": True}
+
+class RootSchema(BaseModel):
+    id: int|None = None
+    make_sales: bool
+    add_categories: bool
+    add_products: bool
+    redact_products: bool
+    add_jobs: bool
+    add_boss: bool
+
     model_config = {"from_attributes": True}

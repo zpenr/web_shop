@@ -2,11 +2,11 @@ from fastapi import (APIRouter,
                      Form, HTTPException, 
                      status, Depends, 
                     )
-from database.queries import Queries
-from schemas import UserSchema, TokenSchema, UserPublicSchema
-from utils import jwt
+from api.database.queries import Queries
+from api.schemas import UserSchema, TokenSchema, UserPublicSchema, RootSchema
+from api.utils import jwt
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from database.setup import create_session
+from api.database.setup import create_session
 from sqlalchemy.orm import Session
 
 auth = APIRouter(tags=["auth"])
@@ -33,10 +33,12 @@ def validate_auth_user(
 
 @auth.post("/login/", response_model=TokenSchema)
 def auth_user(user: UserSchema = Depends(validate_auth_user)):
-    jwt_payload = {"name":user.name,
+    jwt_payload = {"id": user.id,
+                   "name":user.name,
                    "surname":user.surname,
                    "login":user.login,
-                   "id_job":user.id_job}
+                   "id_job":user.id_job
+                   }
     
     access_token = jwt.encode_jwt(jwt_payload)
     return TokenSchema(
@@ -44,22 +46,20 @@ def auth_user(user: UserSchema = Depends(validate_auth_user)):
         token_type="Bearer"
     )
 
-def get_current_user(creds: HTTPAuthorizationCredentials = Depends(http_bearer), session: Session = Depends(create_session)):
+def get_current_user(creds: HTTPAuthorizationCredentials = Depends(http_bearer), session: Session = Depends(create_session)) -> UserPublicSchema:
     token = creds.credentials
     data = jwt.decode_jwt(token)
-    return Queries.empoloyee_by_login(data.get("login"),session)
+    user = Queries.empoloyee_by_login(data.get("login"),session)
+    return UserPublicSchema.model_validate(user)
 
 
 @auth.get("/me/",response_model=UserPublicSchema)
 def user_self_info(user = Depends(get_current_user)):
-    return UserPublicSchema.model_validate(user)
+    return user
 
-@auth.get("/permission/")
-def is_permission(roots,user = Depends(get_current_user)):
-    if roots >= user.roots:
-        return {"message":"access is allowed"}
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Permission denied")
+@auth.get("/permission/", response_model=RootSchema)
+def is_permission(user: RootSchema = Depends(jwt.get_roots)) -> RootSchema:
+    return user
     
 @auth.post("/register/", response_model=TokenSchema)
 def insert_employee(
@@ -79,8 +79,7 @@ def insert_employee(
     jwt_payload = {"name":name,
                    "surname":surname,
                    "login":login,
-                   "id_job":id_job,
-                   "roots":Queries.job_by_id(id_job,session).roots
+                   "id_job":id_job
                    }
     access_token = jwt.encode_jwt(jwt_payload)
 
