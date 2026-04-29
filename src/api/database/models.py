@@ -37,7 +37,9 @@ class Jobs(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    roots: Mapped[int]
+    root_id: Mapped[int] = mapped_column(ForeignKey("roots.id"))
+
+    root: Mapped["Roots"] = relationship(back_populates="job")
 
 class Employees(Base):
     __tablename__ = "employees"
@@ -72,3 +74,16 @@ class Sales(Base):
 
     receipt: Mapped["Receipts"] = relationship(back_populates="sale")
     product: Mapped["Products"] = relationship(back_populates="sales")
+
+class Roots(Base):
+    __tablename__ = "roots"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    make_sales: Mapped[bool]
+    add_categories: Mapped[bool]
+    add_products: Mapped[bool]
+    redact_products: Mapped[bool]
+    add_jobs: Mapped[bool]
+    add_boss: Mapped[bool]
+
+    job: Mapped["Jobs"] = relationship(back_populates="root")

@@ -1,16 +1,17 @@
 import uvicorn
-import schemas
+from api import schemas
 from fastapi import FastAPI, Depends,HTTPException,status
-from database.queries import Queries
+from api.database.queries import Queries
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
-from routers.auth import auth
-from routers.manager import manager
+from api.routers.auth import auth
+from api.routers.manager import manager
 from typing import Optional
-from database.setup import create_session
+from api.database.setup import create_session
 from sqlalchemy.orm import Session
-from routers.auth import get_current_user
-from database.models import Employees
+from api.routers.auth import get_current_user
+from api.database.models import Employees
+from api.utils.jwt import get_roots
 
 app = FastAPI()
 
@@ -25,14 +26,20 @@ app.add_middleware(
 )
 
 @app.post('/products/')
-def insert_product(name:str, price: int, id_category:int, quantity_at_storage:int, session: Session = Depends(create_session)) -> dict:
-    Queries.insert_product(name,price,id_category,quantity_at_storage,session)
-    return {"message":"success"}
+def insert_product(name:str, price: int, id_category:int, quantity_at_storage:int, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)) -> dict:
+    if roots.add_products:
+        Queries.insert_product(name,price,id_category,quantity_at_storage,session)
+        return {"message":"success"}
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
 
 @app.post("/categories/")
-def insert_category(name:str, session: Session = Depends(create_session)) -> dict:
-    Queries.insert_category(name,session)
-    return{"message":"success"}
+def insert_category(name:str, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)) -> dict:
+    if roots.add_categories:
+        Queries.insert_category(name,session)
+        return{"message":"success"}
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
 
 @app.get("/products/",response_model=list[schemas.ProductSchema])
 def all_products(session: Session = Depends(create_session)):
@@ -51,10 +58,14 @@ def insert_sale(
     id_product: int, 
     quintity: int, 
     session: Session = Depends(create_session),
-    current_user: Employees = Depends(get_current_user)):
+    current_user: Employees = Depends(get_current_user), 
+    roots: schemas.RootSchema = Depends(get_roots)):
     try:
-        Queries.insert_sale_with_storage_check(created_at,current_user.id,id_product,quintity,session)
-        return {"message":"success"}
+        if roots.make_sales:
+            Queries.insert_sale_with_storage_check(created_at,current_user.id,id_product,quintity,session)
+            return {"message":"success"}
+        else:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
     except Exception:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                              detail="Something went wrong")
@@ -90,43 +101,53 @@ def all_sales(session: Session = Depends(create_session)):
     return sales_schema
 
 @app.patch("/employees/")
-def add_boss(id:int,boss_id:int, session: Session = Depends(create_session)):
-    Queries.add_boss(id,boss_id,session)
-    return {"message":"success"}
+def add_boss(id:int,boss_id:int, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
+    if roots.add_boss:
+        Queries.add_boss(id,boss_id,session)
+        return {"message":"success"}
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
 
 @app.patch("/products/")
 def update_product(
     product_id:int,
     price: Optional[int] = None,
     quantity_at_storage: Optional[int] = None,
-    session: Session = Depends(create_session)
+    session: Session = Depends(create_session), 
+    roots: schemas.RootSchema = Depends(get_roots)
     ):
-    Queries.update_product(product_id,price,quantity_at_storage,session)
-    return {"massege":"success"}
+    if roots.add_products:
+        Queries.update_product(product_id,price,quantity_at_storage,session)
+        return {"massege":"success"}
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
 
 @app.delete("/products/")
-def delete_product(id:int, session: Session = Depends(create_session)):
-    Queries.delete_product(id,session)
-    return {"massege":"success"}
+def delete_product(id:int, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
+    if roots.add_products:
+        Queries.delete_product(id,session)
+        return {"massege":"success"}
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
 
 @app.get("/products/{id}", response_model=schemas.ProductSchema)
-def product_by_id(id:int, session: Session = Depends(create_session)):
+def product_by_id(id:int, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
     return Queries.get_product_by_id(id,session)
 
 @app.get("/products/filter/", response_model=list[schemas.ProductSchema])
-def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8, session: Session = Depends(create_session)):
+def filtered_products(category_id:int|None, min_price: float = 0, max_price:float = 10**8, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
     products_orm = Queries.filtered_products(category_id, min_price, max_price,session)
     products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
     return products_schema
 
 @app.get("/products/category/", response_model=list[schemas.ProductSchema])
-def products_by_category(category_id:int, session: Session = Depends(create_session)):
+def products_by_category(category_id:int, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
     products_orm = Queries.products_by_category(category_id,session)
     products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
     return products_schema
 
 @app.get("/employee/{id}/sales", response_model=list[schemas.SaleSchema])
-def employee_sales(id:int, session: Session = Depends(create_session)):
+def employee_sales(id:int, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
     sales_orm = Queries.employee_sales(id,session)
     sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
     return sales_schema
@@ -138,11 +159,20 @@ def sales_products(min_sum: int | None = None,
             max_date: datetime | None = None,
             product_id: int | None = None,
             employee_id: int | None = None, 
-            session: Session = Depends(create_session)):
+            session: Session = Depends(create_session), 
+            roots: schemas.RootSchema = Depends(get_roots)):
     
     sales_orm = Queries.filtered_sales(session,min_sum,max_sum,min_date,max_date,product_id, employee_id)
     sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
     return sales_schema
 
+@app.post("/roots/")
+def add_roots(permisions: schemas.RootSchema, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
+    Queries.insert_root(
+        permisions.make_sales, permisions.add_categories,
+        permisions.add_products, permisions.redact_products,
+        permisions.add_jobs, permisions.add_boss, session)
+    return {"message":"success"}
+
 if __name__ == "__main__":
-    uvicorn.run(app)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends
-from database.queries import Queries
-from database.setup import create_session
+from ..database.queries import Queries
+from ..database.setup import create_session
 from sqlalchemy.orm import Session
-from schemas import UserPublicSchema, SaleSchema
+from ..schemas import UserPublicSchema, SaleSchema
+from api.utils.jwt import get_roots
+from api import schemas
+
 manager = APIRouter(tags=["manager"])
 
 @manager.get("/childrens/", response_model=list[UserPublicSchema])
@@ -18,6 +21,6 @@ def get_childrens_sales(boss_id:int, session: Session = Depends(create_session))
     return sales_schema
 
 @manager.delete("/childrens/")
-def dismiss_employee(id:int, boss_id:int, session: Session = Depends(create_session)):
+def dismiss_employee(id:int, boss_id:int, session: Session = Depends(create_session), roots: schemas.RootSchema = Depends(get_roots)):
     Queries.dismiss(id,boss_id,session)
     return {"massege":"success"}

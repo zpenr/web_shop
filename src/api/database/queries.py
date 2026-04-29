@@ -1,8 +1,10 @@
 from sqlalchemy import select, Sequence, and_
-from database.models import Products, Categories, Jobs, Employees, Receipts, Sales
+from api.database.models import (
+                    Products, Categories, Jobs,
+                    Employees, Receipts, Sales, Roots)
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
-
+from api.schemas import RootSchema
 class Queries:
 
     @staticmethod
@@ -21,8 +23,13 @@ class Queries:
         session.add(category)
     
     @staticmethod
-    def insert_job(name: str, roots:int, session: Session) -> None:
-        job = Jobs(name=name, roots=roots)
+    def insert_job(name: str, permisions:RootSchema, session: Session) -> None:
+        root_id = Queries.insert_root(
+            permisions.make_sales, permisions.add_categories,
+            permisions.add_products, permisions.redact_products,
+            permisions.add_jobs, permisions.add_boss, session)
+        
+        job = Jobs(name=name, root_id=root_id)
         session.add(job)
 
     @staticmethod
@@ -123,11 +130,6 @@ class Queries:
         employee = session.query(Employees).filter(and_(Employees.id == id, Employees.boss == boss_id)).first()
         session.delete(employee)
     
-    @staticmethod
-    def root_by_id(id:int, session: Session):
-        query = select(Jobs.roots).join(Employees, Jobs.id == Employees.id_job).where(Employees.id == id)
-        return session.execute(query).scalar_one()
-
     @staticmethod  
     def get_product_by_id(id:int, session: Session):
         product = (select(Products)
@@ -229,3 +231,33 @@ class Queries:
                      )
 
         return session.execute(query).unique().scalars().all()
+    
+    @staticmethod
+    def root_by_id(root_id: int, session: Session):
+        return session.execute(select(Roots).where(Roots.id == root_id)).scalar_one()
+    
+    @staticmethod
+    def root_by_user_id(user_id: int, session: Session):
+        query = (select(Roots)
+        .join(Jobs, Jobs.root_id == Roots.id)
+        .join(Employees, Employees.id_job == Jobs.id)
+        .where(Employees.id == user_id))
+        return session.execute(query).scalar_one()
+    
+    @staticmethod
+    def insert_root(make_sales: bool,
+                    add_categories: bool,
+                    add_products: bool,
+                    redact_products: bool,
+                    add_jobs: bool,
+                    add_boss: bool,
+                    session:Session) -> int:
+        roots = Roots(make_sales=make_sales,
+                      add_categories=add_categories,
+                      add_products=add_products,
+                      redact_products=redact_products, 
+                      add_jobs=add_jobs,add_boss=add_boss)
+        session.add(roots)
+        session.flush()
+
+        return roots.id

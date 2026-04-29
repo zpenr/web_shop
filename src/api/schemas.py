@@ -21,7 +21,7 @@ class UserSchema(UserPublicSchema):
 class JobSchema(BaseModel):
     id: int
     name: str
-    roots: int
+    root_id: int
     model_config = {"from_attributes": True}
 
 class CategorySchema(BaseModel):
@@ -49,3 +49,11 @@ class SaleSchema(BaseModel):
     receipt: ReceiptSchema
     product: ProductSchema
     model_config = {"from_attributes": True}
+
+class RootSchema(BaseModel):
+    make_sales: bool
+    add_categories: bool
+    add_products: bool
+    redact_products: bool
+    add_jobs: bool
+    add_boss: bool
