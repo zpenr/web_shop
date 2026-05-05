@@ -190,5 +190,14 @@ def sales_by_receipt(id_receipt:int, session: Session = Depends(create_session))
     sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
     return sales_schema
 
+@app.get("/products/to/buy", response_model=list[schemas.ProductSchema])
+def products_to_buy(session: Session = Depends(create_session),roots: schemas.RootSchema = Depends(get_roots)):
+    if roots.add_products:
+        products_orm = Queries.products_to_buy(session)
+        product_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+        return product_schema
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can't do this")
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

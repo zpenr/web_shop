@@ -270,3 +270,11 @@ class Queries:
     def sales_by_receipt(receipt_id:int, session:Session):
         query = select(Sales).join(Receipts, Receipts.id==Sales.id_receipt).where(Receipts.id == receipt_id)
         return session.execute(query).scalars().all()
+    
+    @staticmethod
+    def products_to_buy(session: Session):
+        query = (select(Products)
+                    .where(Products.quantity_at_storage<=50)
+                    .options(joinedload(Products.category))
+                    )
+        return session.execute(query)
