@@ -191,9 +191,9 @@ def sales_by_receipt(id_receipt:int, session: Session = Depends(create_session))
     return sales_schema
 
 @app.get("/products/to/buy", response_model=list[schemas.ProductSchema])
-def products_to_buy(session: Session = Depends(create_session),roots: schemas.RootSchema = Depends(get_roots)):
+def products_to_buy(red_quantity:int, session: Session = Depends(create_session),roots: schemas.RootSchema = Depends(get_roots)):
     if roots.add_products:
-        products_orm = Queries.products_to_buy(session)
+        products_orm = Queries.products_to_buy(red_quantity, session)
         product_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
         return product_schema
     else:
