@@ -4,6 +4,7 @@ from api.database.models import (
                     Employees, Receipts, Sales, Roots)
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
+import api.exceptions as exceptions
 
 class Queries:
 
@@ -13,14 +14,18 @@ class Queries:
         return session.execute(query).scalars().all()
     
     @staticmethod
-    def insert_product(name:str, price: int, id_category:int, quantity_at_storage:int, session: Session)->None:
+    def insert_product(name:str, price: int, id_category:int, quantity_at_storage:int, session: Session)->Products:
         product = Products(name=name, price=price, id_category=id_category,quantity_at_storage=quantity_at_storage)
         session.add(product)
+        session.flush()
+        return product
     
     @staticmethod
-    def insert_category(name:str, session: Session) -> None:
+    def insert_category(name:str, session: Session) -> Categories:
         category = Categories(name=name)
         session.add(category)
+        session.flush()
+        return category
     
     @staticmethod
     def insert_job(name: str, root_id:int, session: Session) -> Jobs:               
@@ -30,16 +35,18 @@ class Queries:
         return job
 
     @staticmethod
-    def insert_employee(name:str, surname:str, login:str, password:str, id_job:int, session: Session) -> None:
+    def insert_employee(name:str, surname:str, login:str, password:str, id_job:int, session: Session) -> Employees:
         employee = Employees(name=name, surname=surname,login=login,password=password,id_job=id_job)
         session.add(employee)
+        session.flush()
+        return employee
 
     @staticmethod
     def all_employees(session: Session):
         return session.execute(select(Employees)).scalars().all()
         
     @staticmethod
-    def insert_sale_with_storage_check(id_product:int, quintity:int, receipt_id:int, session: Session) -> bool:
+    def insert_sale_with_storage_check(id_product:int, quintity:int, receipt_id:int, session: Session) -> Sales|exceptions.NotEnougthProductException:
         
         product = session.get(Products, id_product)
         
@@ -50,10 +57,11 @@ class Queries:
             sale = Sales(id_receipt=receipt_id, id_product=id_product,quintity=quintity)
             
             session.add(sale)
-            return True
+            session.flush()
+            return sale
         
         else:
-            return False
+            raise exceptions.NotEnougthProductException()
 
     @staticmethod       
     def job_by_id(id:int, session: Session):
@@ -71,10 +79,11 @@ class Queries:
         return session.execute(query).scalars().all()
     
     @staticmethod
-    def add_boss(id:int,boss_id:int, session: Session):
+    def add_boss(id:int,boss_id:int, session: Session) ->Employees:
         employee = session.query(Employees).with_for_update().filter(Employees.id == id).first()
         employee.boss = boss_id
-            
+        return employee 
+    
     @staticmethod  
     def all_jobs(session: Session):
         query = select(Jobs)
@@ -122,6 +131,7 @@ class Queries:
     def dismiss(id:int, boss_id:int, session: Session):
         employee = session.query(Employees).filter(and_(Employees.id == id, Employees.boss == boss_id)).first()
         session.delete(employee)
+        return employee
     
     @staticmethod  
     def get_product_by_id(id:int, session: Session):
@@ -132,17 +142,19 @@ class Queries:
         return session.execute(product).scalar_one()
         
     @staticmethod
-    def update_product(id:int, price:int|None, quantity_at_storage:int|None, session: Session):
+    def update_product(id:int, price:int|None, quantity_at_storage:int|None, session: Session) -> Products:
         product = session.query(Products).with_for_update().filter(Products.id == id).first()
         if price is not None:
             product.price = price
         if quantity_at_storage is not None:
             product.quantity_at_storage = quantity_at_storage
-
+        return product
+    
     @staticmethod
-    def delete_product(id:int, session: Session):
+    def delete_product(id:int, session: Session) -> Products:
         product = session.query(Employees).filter(Products.id == id).first()
         session.delete(product)
+        return product
     
     @staticmethod
     def filtered_products(category_id:int|None, min_price: float, max_price:float, session: Session):
