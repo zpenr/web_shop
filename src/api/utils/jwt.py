@@ -1,7 +1,7 @@
 import jwt
 import bcrypt
 from datetime import datetime, timedelta
-from fastapi import Response, Depends
+from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.config import settings
 from api.database.queries import Queries
@@ -30,9 +30,6 @@ def decode_jwt(
     decoded = jwt.decode(jwt=token,key=key,algorithms=[algoritm])
     return decoded
 
-def set_cookies(response:Response, content:dict):
-    for name, value in content.items():
-        response.set_cookie(name, value)
 
 def hash_pw(password:str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
