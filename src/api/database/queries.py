@@ -106,8 +106,9 @@ class Queries:
 
     @staticmethod
     def get_boss(id:int, session: Session):
-        query = select(Employees).where(Employees.id == id)
-        return session.execute(query).scalar_one_or_none()
+        employee = session.get_one(Employees, id)
+        boss = session.get_one(Employees, employee.boss)
+        return boss
     
     @staticmethod
     def get_childrens(id:int, session: Session):
@@ -157,18 +158,21 @@ class Queries:
         return product
     
     @staticmethod
-    def filtered_products(category_id:int|None, min_price: float, max_price:float, session: Session):
-        products = (select(Products)
-            .where(
-                and_(
-                    Products.id_category == category_id,
-                    Products.price >= min_price,
-                    Products.price <= max_price
-                    )
-                )
-                .options(joinedload(Products.category))
-                )
-        return session.execute(products).scalars().all()
+    def filtered_products(category_id: int | None, min_price: float | None, max_price: float | None, session: Session):
+        products_query = select(Products).options(joinedload(Products.category))
+        
+        conditions = []
+        if category_id is not None:
+            conditions.append(Products.id_category == category_id)
+        if min_price is not None:
+            conditions.append(Products.price >= min_price)
+        if max_price is not None:
+            conditions.append(Products.price <= max_price)
+        
+        if conditions:
+            products_query = products_query.where(and_(*conditions))
+        
+        return session.execute(products_query).scalars().all()
     
     @staticmethod
     def products_by_category(id_category: int, session: Session):
@@ -284,9 +288,9 @@ class Queries:
         return session.execute(query).scalars().all()
     
     @staticmethod
-    def products_to_buy(session: Session):
+    def products_to_buy(red_quantity:int, session: Session) -> list[Products]:
         query = (select(Products)
-                    .where(Products.quantity_at_storage<=50)
+                    .where(Products.quantity_at_storage<=red_quantity)
                     .options(joinedload(Products.category))
                     )
-        return session.execute(query)
+        return session.execute(query).scalars().all()
