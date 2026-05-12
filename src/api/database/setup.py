@@ -3,7 +3,6 @@ from sqlalchemy import create_engine
 from api.database.models import Base
 from api.config import settings
 from api.database.queries import Queries
-from api.schemas import RootSchema
 
 DB_URL = settings.get_db_url()
 
@@ -29,10 +28,10 @@ def create_session():
 
 def create_admin():
     session = Session()
-    admin_roots = RootSchema(make_sales=True,add_categories=True,add_products=True,redact_products=True,add_jobs=True,add_boss=True)
-    Queries.insert_job("admin", admin_roots,session=session)
+    Queries.insert_root(make_sales=True,add_categories=True,add_products=True,redact_products=True,add_jobs=True,add_boss=True, session=session)
+    Queries.insert_job("admin", 1,session=session)
     session.commit()
 
-# drop_db()
+drop_db()
 create_db_and_tables()
-# create_admin()
+create_admin()
