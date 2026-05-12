@@ -116,6 +116,17 @@ async function renderProducts() {
     let html = `<h2>Товары</h2>`;
     if (currentPermissions.add_products) {
         html += `<button class="btn btn-primary mb-3" onclick="showAddProductForm()">Добавить товар</button>`;
+        // Блок "Товары с низким остатком"
+        html += `
+        <div class="card my-3">
+            <div class="card-body">
+                <h5 class="card-title">Товары с низким остатком</h5>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="low-stock-threshold" placeholder="Порог остатка" min="0" value="5">
+                    <button class="btn btn-outline-warning" onclick="showLowStockProducts()">Показать</button>
+                </div>
+            </div>
+        </div>`;
     }
     html += `
         <div class="filter-form">
@@ -179,6 +190,22 @@ window.applyFilter = async function() {
     const categories = await apiRequest('/categories/');
     const catMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
     renderProductsTable(products, catMap);
+};
+
+window.showLowStockProducts = async function() {
+    const threshold = document.getElementById('low-stock-threshold').value;
+    if (!threshold || threshold < 0) {
+        alert('Введите допустимый порог');
+        return;
+    }
+    try {
+        const products = await apiRequest(`/products/to/buy?red_quantity=${threshold}`);
+        const categories = await apiRequest('/categories/');
+        const catMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
+        renderProductsTable(products, catMap);
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
 };
 
 window.showAddProductForm = async function() {
@@ -447,14 +474,13 @@ window.applySalesFilter = async function() {
     }
 };
 
-// Форма создания чека с позициями
 window.showNewReceiptForm = async function() {
     if (!currentPermissions.make_sales) {
         alert('Недостаточно прав');
         return;
     }
     const products = await apiRequest('/products/');
-    const now = new Date().toISOString().slice(0, 16); // формат для datetime-local
+    const now = new Date().toISOString().slice(0, 16);
 
     const html = `
         <h3>Создание чека (продажи)</h3>
@@ -487,10 +513,7 @@ window.showNewReceiptForm = async function() {
         </form>
     `;
     contentArea.innerHTML = html;
-
-    // Показать кнопки удаления для всех строк, кроме последней
     updateRemoveButtons();
-    
     document.getElementById('receipt-form').addEventListener('submit', submitReceipt);
 };
 
@@ -506,7 +529,7 @@ window.addItemRow = function() {
 
 function updateRemoveButtons() {
     const rows = document.querySelectorAll('.item-row');
-    rows.forEach((row, index) => {
+    rows.forEach((row) => {
         const btn = row.querySelector('.remove-item');
         if (rows.length > 1) {
             btn.style.display = 'inline-block';
@@ -528,8 +551,6 @@ async function submitReceipt(e) {
         return;
     }
     const isoDate = new Date(created_at).toISOString();
-
-    // Собираем позиции
     const rows = document.querySelectorAll('.item-row');
     const items = [];
     for (const row of rows) {
@@ -543,13 +564,11 @@ async function submitReceipt(e) {
     }
 
     try {
-        // 1. Создаём чек
         const receiptParams = new URLSearchParams();
         receiptParams.append('created_at', isoDate);
         const receipt = await apiRequest(`/receipts/?${receiptParams.toString()}`, 'POST');
         const receiptId = receipt.id;
 
-        // 2. Добавляем все позиции
         for (const item of items) {
             const saleParams = new URLSearchParams();
             saleParams.append('id_product', item.id_product);
@@ -582,6 +601,43 @@ async function renderReceipts() {
     });
     html += '</tbody></table>';
     contentArea.innerHTML = html;
+}
+
+window.toggleReceiptDetails = async function(receiptId, btn) {
+    const detailsRow = document.getElementById(`receipt-details-${receiptId}`);
+    if (!detailsRow) return;
+    const isVisible = detailsRow.style.display !== 'none';
+    if (isVisible) {
+        detailsRow.style.display = 'none';
+        btn.textContent = 'Состав';
+        return;
+    }
+    detailsRow.style.display = '';
+    btn.textContent = 'Скрыть';
+    const cell = detailsRow.querySelector('td');
+    if (cell.dataset.loaded === 'true') return;
+    try {
+        const sales = await apiRequest(`/sales/receipt/${receiptId}`);
+        cell.innerHTML = renderSalesForReceipt(sales);
+        cell.dataset.loaded = 'true';
+    } catch (e) {
+        cell.innerHTML = `<div class="alert alert-danger">Ошибка загрузки</div>`;
+    }
+};
+
+function renderSalesForReceipt(sales) {
+    if (!sales.length) return '<p>Нет позиций</p>';
+    let html = '<table class="table table-sm"><thead><tr><th>Товар</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr></thead><tbody>';
+    sales.forEach(s => {
+        const product = s.product;
+        const cat = product?.category?.name || '—';
+        const total = s.quintity * product.price;
+        html += `<tr>
+            <td>${product.name}</td><td>${cat}</td><td>${product.price} руб.</td><td>${s.quintity}</td><td>${total} руб.</td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    return html;
 }
 
 // ------------------- Должности -------------------
@@ -710,45 +766,6 @@ async function renderManager() {
     }
     html += `<h4 class="mt-4">Продажи подчиненных</h4><button class="btn btn-info mb-2" onclick="loadChildrenSales()">Загрузить</button><div id="children-sales"></div>`;
     contentArea.innerHTML = html;
-}
-
-window.toggleReceiptDetails = async function(receiptId, btn) {
-    const detailsRow = document.getElementById(`receipt-details-${receiptId}`);
-    if (!detailsRow) return;
-    const isVisible = detailsRow.style.display !== 'none';
-    if (isVisible) {
-        detailsRow.style.display = 'none';
-        btn.textContent = 'Состав';
-        return;
-    }
-    // Показать строку и загрузить данные
-    detailsRow.style.display = '';
-    btn.textContent = 'Скрыть';
-    const cell = detailsRow.querySelector('td');
-    if (cell.dataset.loaded === 'true') return; // уже загружено
-    try {
-        // Новый URL: /sales/receipt/{receiptId}
-        const sales = await apiRequest(`/sales/receipt/${receiptId}`);
-        cell.innerHTML = renderSalesForReceipt(sales);
-        cell.dataset.loaded = 'true';
-    } catch (e) {
-        cell.innerHTML = `<div class="alert alert-danger">Ошибка загрузки</div>`;
-    }
-};
-
-function renderSalesForReceipt(sales) {
-    if (!sales.length) return '<p>Нет позиций</p>';
-    let html = '<table class="table table-sm"><thead><tr><th>Товар</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr></thead><tbody>';
-    sales.forEach(s => {
-        const product = s.product;
-        const cat = product?.category?.name || '—';
-        const total = s.quintity * product.price;
-        html += `<tr>
-            <td>${product.name}</td><td>${cat}</td><td>${product.price} руб.</td><td>${s.quintity}</td><td>${total} руб.</td>
-        </tr>`;
-    });
-    html += '</tbody></table>';
-    return html;
 }
 
 window.loadChildrenSales = async function() {
