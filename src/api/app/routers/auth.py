@@ -6,7 +6,7 @@ from api.app.db.queries import Queries
 from api.app.schemas.schemas import UserSchema, TokenSchema, UserPublicSchema, RootSchema
 from api.app.core import security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from api.app.db.setup import create_session
+from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
 
 auth = APIRouter(tags=["auth"])

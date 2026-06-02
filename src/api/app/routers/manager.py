@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from ..db.queries import Queries
-from ..db.setup import create_session
+from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
 from ..schemas.schemas import UserPublicSchema, SaleSchema
 from api.app.core.security import get_roots

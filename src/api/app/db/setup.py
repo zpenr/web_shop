@@ -15,16 +15,6 @@ def drop_db():
     Base.metadata.drop_all(engine)
 
 Session = sessionmaker(engine)
-def create_session():
-    session = Session()
-    try:
-        yield session
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise 
-    finally:
-        session.close()
 
 def create_admin():
     session = Session()

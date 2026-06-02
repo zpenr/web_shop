@@ -3,7 +3,7 @@ from api.app.schemas import schemas
 from api.app.db.queries import Queries
 from datetime import datetime
 from typing import Optional
-from api.app.db.setup import create_session
+from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
 from api.app.routers.auth import get_current_user
 from api.app.core.security import get_roots

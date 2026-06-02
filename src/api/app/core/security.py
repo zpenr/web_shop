@@ -5,7 +5,7 @@ from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.app.core.config import settings
 from api.app.db.queries import Queries
-from api.app.db.setup import create_session
+from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
 from api.app.schemas.schemas import RootSchema
 
