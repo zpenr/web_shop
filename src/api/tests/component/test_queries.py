@@ -2,9 +2,9 @@ import pytest
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from api.database.queries import Queries
-from api.database.models import Categories, Products, Roots, Jobs, Employees, Receipts, Sales
-import api.exceptions as exceptions
+from api.app.db.queries import Queries
+from api.app.models.models import Categories, Products, Roots, Jobs, Employees, Receipts, Sales
+import api.app.core.exceptions as exceptions
 
 
 @pytest.fixture
@@ -84,7 +84,7 @@ def test_all_employess(session, sample_data):
     assert len(Queries.all_employees(session)) == 2
 
 def test_job_by_id(session, sample_data):
-    assert Queries.job_by_id(1, session).name == sample_data["job"].name
+    assert Queries.job_by_id(2, session).name == sample_data["job"].name
 
 def test_empoloyee_by_login(session, sample_data):
     employee =  Queries.empoloyee_by_login(login=sample_data["emp2"].login, session=session)
@@ -94,7 +94,7 @@ def test_all_categories(session,sample_data):
     assert len(Queries.all_categories(session)) == 1
 
 def test_all_jobs(session,sample_data):
-    assert len(Queries.all_jobs(session)) == 1
+    assert len(Queries.all_jobs(session)) == 2
 
 def test_get_product_by_id(session, sample_data):
     product = Queries.get_product_by_id(id=sample_data["prod1"].id, session=session)
@@ -163,13 +163,13 @@ def test_get_boss(session,sample_data):
     assert Queries.get_boss(sample_data["emp2"].id, session).id == 1
 
 def test_get_all_roots(session,sample_data):
-    assert len(Queries.get_all_roots(session)) == 1
+    assert len(Queries.get_all_roots(session)) == 2
 
 def test_root_by_id(session, sample_data):
     assert Queries.root_by_id(1,session).id == 1
 
 @pytest.mark.parametrize("id, target_id",[
-    (1,1)
+    (1,2)
 ])
 def test_root_by_user_id(id, target_id, session, sample_data):
     res = Queries.root_by_user_id(id,session)

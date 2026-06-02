@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
-from ..database.queries import Queries
-from ..database.setup import create_session
+from ..db.queries import Queries
+from ..db.setup import create_session
 from sqlalchemy.orm import Session
-from ..schemas import UserPublicSchema, SaleSchema
-from api.utils.jwt import get_roots
-from api import schemas
+from ..schemas.schemas import UserPublicSchema, SaleSchema
+from api.app.core.security import get_roots
+from api.app.schemas import schemas
 
 manager = APIRouter(tags=["manager"])
 

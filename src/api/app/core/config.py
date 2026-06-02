@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
-BASE_PATH = Path(__file__).parent.parent.parent
+BASE_PATH = Path(__file__).parents[4]
 
 class Settings(BaseSettings):
     db_url: str = "sqlite:///database.db"
