@@ -3,11 +3,11 @@ import bcrypt
 from datetime import datetime, timedelta
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from api.config import settings
-from api.database.queries import Queries
-from api.database.setup import create_session
+from api.app.core.config import settings
+from api.app.db.queries import Queries
+from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
-from api.schemas import RootSchema
+from api.app.schemas.schemas import RootSchema
 
 def encode_jwt(
         payload: dict,

@@ -2,11 +2,11 @@ from fastapi import (APIRouter,
                      Form, HTTPException, 
                      status, Depends, 
                     )
-from api.database.queries import Queries
-from api.schemas import UserSchema, TokenSchema, UserPublicSchema, RootSchema
-from api.utils import jwt
+from api.app.db.queries import Queries
+from api.app.schemas.schemas import UserSchema, TokenSchema, UserPublicSchema, RootSchema
+from api.app.core import security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from api.database.setup import create_session
+from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
 
 auth = APIRouter(tags=["auth"])
@@ -27,7 +27,7 @@ def validate_auth_user(
     if user is None:
         raise exc
     
-    if jwt.check_pw(password, user.password):
+    if security.check_pw(password, user.password):
         return user
     raise exc
 
@@ -40,7 +40,7 @@ def auth_user(user: UserSchema = Depends(validate_auth_user)):
                    "id_job":user.id_job
                    }
     
-    access_token = jwt.encode_jwt(jwt_payload)
+    access_token = security.encode_jwt(jwt_payload)
     return TokenSchema(
         access_token=access_token,
         token_type="Bearer"
@@ -48,7 +48,7 @@ def auth_user(user: UserSchema = Depends(validate_auth_user)):
 
 def get_current_user(creds: HTTPAuthorizationCredentials = Depends(http_bearer), session: Session = Depends(create_session)) -> UserPublicSchema:
     token = creds.credentials
-    data = jwt.decode_jwt(token)
+    data = security.decode_jwt(token)
     user = Queries.empoloyee_by_login(data.get("login"),session)
     return UserPublicSchema.model_validate(user)
 
@@ -58,7 +58,7 @@ def user_self_info(user = Depends(get_current_user)):
     return user
 
 @auth.get("/permission/", response_model=RootSchema)
-def is_permission(user: RootSchema = Depends(jwt.get_roots)) -> RootSchema:
+def is_permission(user: RootSchema = Depends(security.get_roots)) -> RootSchema:
     return user
     
 @auth.post("/register/", response_model=TokenSchema)
@@ -75,13 +75,13 @@ def insert_employee(
         raise HTTPException(status_code=status.HTTP_418_IM_A_TEAPOT,
                              detail="Your passwords don't match")
     
-    Queries.insert_employee(name,surname,login,jwt.hash_pw(password),id_job,session)
+    Queries.insert_employee(name,surname,login,security.hash_pw(password),id_job,session)
     jwt_payload = {"name":name,
                    "surname":surname,
                    "login":login,
                    "id_job":id_job
                    }
-    access_token = jwt.encode_jwt(jwt_payload)
+    access_token = security.encode_jwt(jwt_payload)
 
     return TokenSchema(
         access_token=access_token,

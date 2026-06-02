@@ -1,8 +1,8 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from api.database.models import Base
-from api.config import settings
-from api.database.queries import Queries
+from api.app.models.models import Base
+from api.app.core.config import settings
+from api.app.db.queries import Queries
 
 DB_URL = settings.get_db_url()
 
@@ -15,16 +15,6 @@ def drop_db():
     Base.metadata.drop_all(engine)
 
 Session = sessionmaker(engine)
-def create_session():
-    session = Session()
-    try:
-        yield session
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise 
-    finally:
-        session.close()
 
 def create_admin():
     session = Session()

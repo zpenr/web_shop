@@ -1,7 +1,7 @@
 import tempfile
 import secrets
 import pytest
-from api.config import settings
+from api.app.core.config import settings
 from pathlib import Path
 
 settings.testing = True
@@ -19,9 +19,9 @@ from fastapi.testclient import TestClient #noqa
 from sqlalchemy import create_engine #noqa
 from sqlalchemy.orm import sessionmaker #noqa
 
-from api.database.models import Base #noqa
-from api.database.queries import Queries #noqa
-from api.main import app #noqa
+from api.app.models.models import Base #noqa
+from api.app.db.queries import Queries #noqa
+from api.app.main import app #noqa
 
 @pytest.fixture(scope="session")
 def engine():
@@ -49,7 +49,7 @@ def session(engine):
 
 @pytest.fixture(scope="function")
 def client(session):
-    from api.database.setup import create_session
+    from api.app.db.setup import create_session
 
     def _override_session():
         yield session

@@ -1,10 +1,10 @@
 from sqlalchemy import select, Sequence, and_
-from api.database.models import (
+from api.app.models.models import (
                     Products, Categories, Jobs,
                     Employees, Receipts, Sales, Roots)
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
-import api.exceptions as exceptions
+import api.app.core.exceptions as exceptions
 
 class Queries:
 
