@@ -1,3 +1,3 @@
-from ..models.models import Base, Categories
+from ..models.models import Base, Category
 
-__all__ = ["Base", "Categories", "create_session"]
+__all__ = ["Base", "Category", "create_session"]
