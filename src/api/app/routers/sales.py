@@ -7,7 +7,8 @@ from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
 from api.app.routers.auth import get_current_user
 from api.app.core.security import get_permissions
-
+from receipt_pdf_generator import ReceiptPDFGenerator
+from fastapi.responses import StreamingResponse
 sales = APIRouter(tags=["sales"])
 
 
@@ -272,3 +273,62 @@ def products_to_buy(
         return product_schema
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can't do this")
+
+@sales.get("/{receipt_id}/pdf")
+async def get_receipt_pdf(
+    receipt_id: int,
+    session: Session = Depends(create_session),
+    current_user: schemas.UserPublicSchema = Depends(get_current_user),
+)->StreamingResponse:
+    try:
+        receipt_orm = Queries.sales_by_receipt(receipt_id, session)
+        
+        if not receipt_orm:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Чек с ID {receipt_id} не найден"
+            )
+        
+        receipt = receipt_orm[0].receipt
+        employee = receipt.employee
+        
+        pdf_data = {
+            'receipt_id': receipt.id,
+            'created_at': receipt.created_at.strftime('%d.%m.%Y %H:%M'),
+            'employee_name': f"{employee.name} {employee.surname}",
+            'sales': []
+        }
+        
+        total_sum = 0
+        for sale in receipt_orm:
+            product = sale.product
+            line_sum = product.price * sale.quantity
+            total_sum += line_sum
+            
+            pdf_data['sales'].append({
+                'name': product.name,
+                'quantity': sale.quantity,
+                'price': product.price
+            })
+        
+        pdf_data['total_sum'] = total_sum
+        
+        pdf_buffer = ReceiptPDFGenerator().generate_receipt_pdf(pdf_data)
+        
+        filename = f"receipt_{receipt_id}.pdf"
+        
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Внутренняя ошибка сервера: {str(e)}"
+        )
