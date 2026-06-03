@@ -15,13 +15,14 @@ tmp_key_file.close()
 settings.private_key_path = Path(tmp_key_file.name)
 settings.public_key_path = Path(tmp_key_file.name)
 
-from fastapi.testclient import TestClient #noqa
-from sqlalchemy import create_engine #noqa
-from sqlalchemy.orm import sessionmaker #noqa
+from fastapi.testclient import TestClient  # noqa
+from sqlalchemy import create_engine  # noqa
+from sqlalchemy.orm import sessionmaker  # noqa
 
-from api.app.models.models import Base #noqa
-from api.app.db.queries import Queries #noqa
-from api.app.main import app #noqa
+from api.app.models.models import Base  # noqa
+from api.app.db.queries import Queries  # noqa
+from api.app.main import app  # noqa
+
 
 @pytest.fixture(scope="session")
 def engine():
@@ -30,11 +31,13 @@ def engine():
     yield eng
     eng.dispose()
 
+
 @pytest.fixture(scope="session", autouse=True)
 def create_tables(engine):
     Base.metadata.create_all(engine)
     yield
     Base.metadata.drop_all(engine)
+
 
 @pytest.fixture(scope="function")
 def session(engine):
@@ -46,6 +49,7 @@ def session(engine):
     s.close()
     transaction.rollback()
     connection.close()
+
 
 @pytest.fixture(scope="function")
 def client(session):
@@ -59,15 +63,16 @@ def client(session):
         yield c
     app.dependency_overrides.clear()
 
+
 @pytest.fixture(scope="function")
 def admin_token(client, session):
-    root = Queries.insert_root(
+    permission = Queries.insert_permission(
         make_sales=True, add_categories=True, add_products=True,
         redact_products=True, add_jobs=True, add_boss=True,
         session=session
     )
     session.flush()
-    job = Queries.insert_job("admin", root.id, session)
+    job = Queries.insert_job("admin", permission.id, session)
     session.flush()
 
     resp = client.post("/auth/register/", data={
@@ -78,9 +83,11 @@ def admin_token(client, session):
     assert resp.status_code == 200
     return resp.json()["access_token"]
 
+
 @pytest.fixture(scope="function")
 def auth_header(admin_token):
     return {"Authorization": f"Bearer {admin_token}"}
+
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_temp_key():
