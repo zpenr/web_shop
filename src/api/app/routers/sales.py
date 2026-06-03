@@ -9,6 +9,7 @@ from api.app.routers.auth import get_current_user
 from api.app.core.security import get_permissions
 from receipt_pdf_generator import ReceiptPDFGenerator
 from fastapi.responses import StreamingResponse
+from api.app.services.emailSenderService import EmailSender as email_sender
 sales = APIRouter(tags=["sales"])
 
 
@@ -324,6 +325,113 @@ async def get_receipt_pdf(
                 "Content-Disposition": f'attachment; filename="{filename}"'
             }
         )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Внутренняя ошибка сервера: {str(e)}"
+        )
+    
+@sales.post("/send/{receipt_id}")
+async def send_receipt(
+    receipt_id: int,
+    email_address: str,
+    session: Session = Depends(create_session),
+    current_user: schemas.UserPublicSchema = Depends(get_current_user),
+) -> dict:
+    """
+    Отправка PDF чека на указанный email
+    
+    Args:
+        receipt_id: ID чека
+        email_address: Email для отправки
+        session: Сессия БД
+        current_user: Текущий пользователь
+        pdf_service: PDF сервис
+        
+    Returns:
+        dict: Статус отправки
+    """
+    try:
+        if "@" not in email_address or "." not in email_address:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный формат email адреса"
+            )
+        
+        receipt_orm = Queries.sales_by_receipt(receipt_id, session)
+        
+        if not receipt_orm:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Чек с ID {receipt_id} не найден"
+            )
+        
+        receipt = receipt_orm[0].receipt
+        employee = receipt.employee
+        
+        pdf_data = {
+            'receipt_id': receipt.id,
+            'created_at': receipt.created_at.strftime('%d.%m.%Y %H:%M'),
+            'employee_name': f"{employee.name} {employee.surname}",
+            'sales': []
+        }
+        
+        total_sum = 0
+        for sale in receipt_orm:
+            product = sale.product
+            line_sum = product.price * sale.quantity
+            total_sum += line_sum
+            
+            pdf_data['sales'].append({
+                'name': product.name,
+                'quantity': sale.quantity,
+                'price': product.price
+            })
+        
+        pdf_data['total_sum'] = total_sum
+        
+        # Генерируем PDF
+        pdf_buffer = ReceiptPDFGenerator().generate_receipt_pdf(pdf_data)
+        pdf_data_bytes = pdf_buffer.getvalue()
+        
+        # Формируем email
+        subject = f"Чек №{receipt_id} от {pdf_data['created_at']}"
+        body = f"""Здравствуйте!
+
+Присылаем вам чек №{receipt_id} от {pdf_data['created_at']}.
+
+Магазин: Ваш Магазин
+Продавец: {pdf_data['employee_name']}
+
+С уважением,
+Команда Вашего Магазина
+"""
+        
+        # Отправляем email
+        email_filename = f"receipt_{receipt_id}.pdf"
+        email_sent = email_sender.send_email(
+            to_email=email_address,
+            subject=subject,
+            body=body,
+            attachment_data=pdf_data_bytes,
+            attachment_name=email_filename
+        )
+        
+        if not email_sent:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось отправить email"
+            )
+        
+        return {
+            "message": "Чек успешно отправлен на email",
+            "receipt_id": receipt_id,
+            "email": email_address,
+            "timestamp": datetime.now().isoformat()
+        }
         
     except HTTPException:
         raise
