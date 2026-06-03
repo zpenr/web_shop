@@ -5,9 +5,9 @@ services:
         dockerfile: src/api/Dockerfile
     image: api-web-site
     container_name: api-web-site
-    command: "python main.py"
+    command: "python app/main.py"
     env_file:
-      - .env
+      - .dev.env
     volumes:
       - ./src/api:/project
       - ./certs:/certs  
