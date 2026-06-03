@@ -15,7 +15,8 @@ dependencies = [
     "pydantic-settings",
     "pyjwt[crypto]",
     "bcrypt",
-    "alembic"
+    "alembic",
+    "receipt-pdf-generator"
 ]
 
 [project.optional-dependencies]
