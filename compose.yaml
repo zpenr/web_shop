@@ -5,12 +5,12 @@ services:
         dockerfile: src/api/Dockerfile
     image: api-web-site
     container_name: api-web-site
-    command: "python app/main.py"
     env_file:
       - .dev.env
     volumes:
-      - ./src/api:/project
-      - ./certs:/certs  
+      - ./src/api/app:/project/src/api/app
+      - ./src/api/migrations:/project/src/api/migrations
+      - ./certs:/certs
     ports:
       - "8000:8000"
 
