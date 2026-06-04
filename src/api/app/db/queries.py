@@ -167,11 +167,14 @@ class Queries:
             product.quantity_at_storage = quantity_at_storage
         return product
 
+    # ИСПРАВЛЕННЫЙ МЕТОД delete_product
     @staticmethod
-    def delete_product(id: int, session: Session) -> Product:
+    def delete_product(id: int, session: Session) -> dict:
         product = session.query(Product).filter(Product.id == id).first()
+        if product is None:
+            raise exceptions.NotFoundError(f"Product with id {id} not found")
         session.delete(product)
-        return product
+        return {"message": "Product deleted successfully"}
 
     @staticmethod
     def filtered_products(
