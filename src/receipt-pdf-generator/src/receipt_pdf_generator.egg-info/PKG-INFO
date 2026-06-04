@@ -1,0 +1,70 @@
+Metadata-Version: 2.4
+Name: receipt-pdf-generator
+Version: 1.0.0
+Summary: Library for PDF receipt generation
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Office/Business
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: reportlab>=4.0.0
+Dynamic: license-file
+
+# Receipt PDF Generator
+
+Библиотека для генерации PDF чеков на Python с использованием ReportLab.
+
+## Установка
+
+```bash
+pip install receipt-pdf-generator
+```
+
+## Быстрый старт
+
+```python
+from receipt_pdf_generator import ReceiptPDFService
+
+# Данные чека
+receipt_data = {
+    'receipt_id': 12345,
+    'created_at': '15.01.2024 14:30',
+    'employee_name': 'Иванов Иван',
+    'sales': [
+        {'name': 'Хлеб', 'quantity': 2, 'price': 50},
+        {'name': 'Молоко', 'quantity': 1, 'price': 80},
+        {'name': 'Сыр', 'quantity': 1, 'price': 200}
+    ]
+}
+
+# Генерация PDF
+pdf_service = ReceiptPDFService()
+pdf_buffer = pdf_service.generate_receipt_pdf(receipt_data)
+
+# Сохранение в файл
+with open('receipt.pdf', 'wb') as f:
+    f.write(pdf_buffer.getvalue())
+```
+
+## Конфигурация
+
+Можно настроить шаблон PDF:
+
+```python
+template_config = {
+    'page_size': 'A4',
+    'margins': {'top': 20, 'bottom': 20, 'left': 20, 'right': 20},
+    'font_size': 10
+}
+
+pdf_service = ReceiptPDFService(template_config)
+```
