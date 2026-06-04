@@ -10,6 +10,8 @@ from api.app.core.security import get_permissions
 from receipt_pdf_generator import ReceiptPDFGenerator
 from fastapi.responses import StreamingResponse
 from api.app.services.emailSenderService import EmailSender as email_sender
+import api.app.core.exceptions as exceptions   
+
 sales = APIRouter(tags=["sales"])
 
 
@@ -154,17 +156,21 @@ def update_product(
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
 
 
+# ИСПРАВЛЕННЫЙ ЭНДПОИНТ delete_product
 @sales.delete("/products/")
 def delete_product(
     id: int,
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
-    if permissions.add_products:
-        Queries.delete_product(id, session)
-        return {"message": "success"}
-    else:
+    if not permissions.add_products:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
+    
+    try:
+        result = Queries.delete_product(id, session)
+        return result
+    except exceptions.NotFoundError as e:
+        raise HTTPException(status_code=e.code, detail=e.message)
 
 
 @sales.get("/products/{id}", response_model=schemas.ProductSchema)
