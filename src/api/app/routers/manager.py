@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from ..db.queries import Queries
+from api.app.db.queries import Queries
 from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
-from ..schemas.schemas import UserPublicSchema, SaleSchema
+from api.app.schemas.schemas import UserPublicSchema, SaleSchema
 from api.app.core.security import get_permissions
 from api.app.schemas import schemas
 

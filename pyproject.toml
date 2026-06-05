@@ -26,6 +26,14 @@ dev = [
     "pytest-asyncio",
     "httpx"
 ]
+docs = [
+    "sphinx", 
+    "sphinx-rtd-theme", 
+    "myst-parser", 
+    "sphinx-autobuild",
+    "sphinx-autodoc-typehints",
+    "sphinxcontrib-openapi"
+]
 
 [build-system]
 requires = ["setuptools>=61.0.0"]
