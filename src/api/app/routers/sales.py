@@ -157,14 +157,13 @@ def insert_sale(
         HTTPException: 403 Forbidden, если нет права make_sales.
         HTTPException: 409 Conflict, если недостаточно товара на складе или иная ошибка.
     """
+    if not permissions.make_sales:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
     try:
-        if permissions.make_sales:
-            Queries.insert_sale_with_storage_check(
-                id_product, quantity, receipt_id, session
-            )
-            return {"message": "success"}
-        else:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
+        Queries.insert_sale_with_storage_check(id_product, quantity, receipt_id, session)
+        return {"message": "success"}
+
+    
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Something went wrong"
@@ -361,7 +360,7 @@ def product_by_id(
 
 @sales.get("/products/filter/", response_model=list[schemas.ProductSchema])
 def filtered_products(
-    category_id: int | None,
+    category_id: int | None = None,
     min_price: float = 0,
     max_price: float = 10**8,
     session: Session = Depends(create_session),

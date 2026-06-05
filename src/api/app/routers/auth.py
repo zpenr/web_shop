@@ -16,6 +16,7 @@ from api.app.core import security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 auth = APIRouter(tags=["auth"])
 http_bearer = HTTPBearer()
@@ -94,8 +95,19 @@ def get_current_user(
     """
 
     token = creds.credentials
-    data = security.decode_jwt(token)
+    try:
+        data = security.decode_jwt(token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
     user = Queries.employee_by_login(data.get("login"), session)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
     return UserPublicSchema.model_validate(user)
 
 
@@ -160,10 +172,20 @@ def insert_employee(
             detail="Your passwords don't match",
         )
 
-    Queries.insert_employee(
-        name, surname, login, security.hash_pw(password), id_job, session
-    )
+    try:
+        employee = Queries.insert_employee(
+            name, surname, login, security.hash_pw(password), id_job, session
+        )
+        session.flush()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this login already exists",
+        )
+
     jwt_payload = {
+        "id": employee.id,
         "name": name,
         "surname": surname,
         "login": login,

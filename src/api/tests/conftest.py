@@ -22,6 +22,7 @@ from sqlalchemy.orm import sessionmaker  # noqa
 from api.app.models.models import Base  # noqa
 from api.app.db.queries import Queries  # noqa
 from api.app.main import app  # noqa
+from api.app.dependencies import create_session  # noqa
 
 
 @pytest.fixture(scope="session")
@@ -53,8 +54,6 @@ def session(engine):
 
 @pytest.fixture(scope="function")
 def client(session):
-    from api.app.db.setup import create_session
-
     def _override_session():
         yield session
 
@@ -66,6 +65,8 @@ def client(session):
 
 @pytest.fixture(scope="function")
 def admin_token(client, session):
+    from api.app.core import security as sec
+
     permission = Queries.insert_permission(
         make_sales=True,
         add_categories=True,
@@ -78,18 +79,19 @@ def admin_token(client, session):
     session.flush()
     job = Queries.insert_job("admin", permission.id, session)
     session.flush()
-
-    resp = client.post(
-        "/auth/register/",
-        data={
-            "name": "Admin",
-            "surname": "Adminov",
-            "login": "admin",
-            "password": "adminpass",
-            "password2": "adminpass",
-            "id_job": job.id,
-        },
+    employee = Queries.insert_employee(
+        name="Admin", surname="Adminov", login="admin",
+        password=sec.hash_pw("adminpass"), id_job=job.id,
+        session=session
     )
+    session.flush()
+
+
+    resp = client.post("/auth/login/", data={
+        "login": "admin",
+        "password": "adminpass"
+    })
+
     assert resp.status_code == 200
     return resp.json()["access_token"]
 
