@@ -16,7 +16,7 @@ def session():
 
 def test_product_price_negative_raises():
     with pytest.raises(ValueError):
-        product = Product(name="test", price=-10, id_category=1, quantity_at_storage=5)  # noqa
+        Product(name="test", price=-10, id_category=1, quantity_at_storage=5)
 
 
 def test_product_price_zero_ok(session):
@@ -24,4 +24,21 @@ def test_product_price_zero_ok(session):
     session.add(product)
     session.flush()
     assert product.price == 0
+    session.rollback()
+
+
+def test_product_quantity_negative_allowed(session):
+    product = Product(name="deficit", price=100, id_category=1, quantity_at_storage=-5)
+    session.add(product)
+    session.flush()
+    assert product.quantity_at_storage == -5
+    session.rollback()
+
+
+def test_product_quantity_large_value(session):
+    huge = 2**31 - 1
+    product = Product(name="huge", price=1, id_category=1, quantity_at_storage=huge)
+    session.add(product)
+    session.flush()
+    assert product.quantity_at_storage == huge
     session.rollback()

@@ -6,7 +6,12 @@ from fastapi import (
     Depends,
 )
 from api.app.db.queries import Queries
-from api.app.schemas.schemas import UserSchema, TokenSchema, UserPublicSchema, PermissionSchema
+from api.app.schemas.schemas import (
+    UserSchema,
+    TokenSchema,
+    UserPublicSchema,
+    PermissionSchema,
+)
 from api.app.core import security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.app.dependencies import create_session
@@ -21,6 +26,19 @@ def validate_auth_user(
     password: str = Form(),
     session: Session = Depends(create_session),
 ):
+    """Проверяет учётные данные пользователя при входе.
+
+    Args:
+        login: Логин пользователя (из формы).
+        password: Пароль пользователя (из формы).
+        session: Сессия SQLAlchemy (внедряется зависимостью).
+
+    Returns:
+        Объект пользователя (модель SQLAlchemy), если аутентификация успешна.
+
+    Raises:
+        HTTPException: 401 Unauthorized, если логин не найден или пароль неверен.
+    """
     exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid login or password",
@@ -38,6 +56,14 @@ def validate_auth_user(
 
 @auth.post("/login/", response_model=TokenSchema)
 def auth_user(user: UserSchema = Depends(validate_auth_user)):
+    """Эндпоинт входа в систему. Возвращает JWT-токен.
+
+    Args:
+        user: Валидированный пользователь (внедряется через Depends).
+
+    Returns:
+        TokenSchema: Объект, содержащий access_token и token_type.
+    """
     jwt_payload = {
         "id": user.id,
         "name": user.name,
@@ -54,6 +80,19 @@ def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(http_bearer),
     session: Session = Depends(create_session),
 ) -> UserPublicSchema:
+    """Извлекает текущего пользователя из JWT-токена.
+
+    Args:
+        creds: Учётные данные HTTP Bearer (токен).
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        UserPublicSchema: Публичные данные пользователя.
+
+    Raises:
+        HTTPException: 401 Unauthorized при невалидном токене или отсутствии пользователя.
+    """
+
     token = creds.credentials
     data = security.decode_jwt(token)
     user = Queries.employee_by_login(data.get("login"), session)
@@ -62,6 +101,14 @@ def get_current_user(
 
 @auth.get("/me/", response_model=UserPublicSchema)
 def user_self_info(user=Depends(get_current_user)):
+    """Возвращает информацию о текущем авторизованном пользователе.
+
+    Args:
+        user: Пользователь, полученный через get_current_user.
+
+    Returns:
+        UserPublicSchema: Данные пользователя.
+    """
     return user
 
 
@@ -69,6 +116,14 @@ def user_self_info(user=Depends(get_current_user)):
 def is_permission(
     user: PermissionSchema = Depends(security.get_permissions),
 ) -> PermissionSchema:
+    """Возвращает права доступа текущего пользователя.
+
+    Args:
+        user: Права пользователя, полученные через зависимость security.get_permissions.
+
+    Returns:
+        PermissionSchema: Схема прав доступа.
+    """
     return user
 
 
@@ -82,6 +137,23 @@ def insert_employee(
     id_job: int = Form(),
     session: Session = Depends(create_session),
 ):
+    """Регистрирует нового сотрудника и возвращает JWT-токен.
+
+    Args:
+        name: Имя сотрудника.
+        surname: Фамилия сотрудника.
+        login: Логин (должен быть уникальным).
+        password: Пароль.
+        password2: Повтор пароля для проверки.
+        id_job: ID должности (связан с правами).
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        TokenSchema: JWT-токен для зарегистрированного пользователя.
+
+    Raises:
+        HTTPException: 418 I'm a teapot, если пароли не совпадают.
+    """
     if password != password2:
         raise HTTPException(
             status_code=status.HTTP_418_IM_A_TEAPOT,

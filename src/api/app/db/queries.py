@@ -1,7 +1,12 @@
 from sqlalchemy import select, Sequence, and_
 from api.app.models.models import (
-    Product, Category, Job,
-    Employee, Receipt, Sale, Permission
+    Product,
+    Category,
+    Job,
+    Employee,
+    Receipt,
+    Sale,
+    Permission,
 )
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
@@ -17,10 +22,17 @@ class Queries:
 
     @staticmethod
     def insert_product(
-        name: str, price: int, id_category: int, quantity_at_storage: int, session: Session
+        name: str,
+        price: int,
+        id_category: int,
+        quantity_at_storage: int,
+        session: Session,
     ) -> Product:
         product = Product(
-            name=name, price=price, id_category=id_category, quantity_at_storage=quantity_at_storage
+            name=name,
+            price=price,
+            id_category=id_category,
+            quantity_at_storage=quantity_at_storage,
         )
         session.add(product)
         session.flush()
@@ -42,7 +54,12 @@ class Queries:
 
     @staticmethod
     def insert_employee(
-        name: str, surname: str, login: str, password: str, id_job: int, session: Session
+        name: str,
+        surname: str,
+        login: str,
+        password: str,
+        id_job: int,
+        session: Session,
     ) -> Employee:
         employee = Employee(
             name=name, surname=surname, login=login, password=password, id_job=id_job
@@ -91,7 +108,9 @@ class Queries:
 
     @staticmethod
     def add_boss(id: int, boss_id: int, session: Session) -> Employee:
-        employee = session.query(Employee).with_for_update().filter(Employee.id == id).first()
+        employee = (
+            session.query(Employee).with_for_update().filter(Employee.id == id).first()
+        )
         employee.boss = boss_id
         return employee
 
@@ -102,12 +121,9 @@ class Queries:
 
     @staticmethod
     def all_sales(session: Session):
-        query = (
-            select(Sale)
-            .options(
-                joinedload(Sale.receipt).joinedload(Receipt.employee),
-                joinedload(Sale.product).joinedload(Product.category),
-            )
+        query = select(Sale).options(
+            joinedload(Sale.receipt).joinedload(Receipt.employee),
+            joinedload(Sale.product).joinedload(Product.category),
         )
         return session.execute(query).scalars().all()
 
@@ -130,7 +146,9 @@ class Queries:
     @staticmethod
     def get_childrens_sales(boss_id: int, session: Session):
         ids = select(Employee.id).where(Employee.boss == boss_id).scalar_subquery()
-        subquery = select(Receipt.id).where(Receipt.id_employee.in_(ids)).scalar_subquery()
+        subquery = (
+            select(Receipt.id).where(Receipt.id_employee.in_(ids)).scalar_subquery()
+        )
         query = (
             select(Sale)
             .where(Sale.id_receipt.in_(subquery))
@@ -153,25 +171,34 @@ class Queries:
 
     @staticmethod
     def get_product_by_id(id: int, session: Session):
-        product = select(Product).where(Product.id == id).options(joinedload(Product.category))
+        product = (
+            select(Product)
+            .where(Product.id == id)
+            .options(joinedload(Product.category))
+        )
         return session.execute(product).scalar_one()
 
     @staticmethod
     def update_product(
         id: int, price: int | None, quantity_at_storage: int | None, session: Session
     ) -> Product:
-        product = session.query(Product).with_for_update().filter(Product.id == id).first()
+        product = (
+            session.query(Product).with_for_update().filter(Product.id == id).first()
+        )
         if price is not None:
             product.price = price
         if quantity_at_storage is not None:
             product.quantity_at_storage = quantity_at_storage
         return product
 
+    # ИСПРАВЛЕННЫЙ МЕТОД delete_product
     @staticmethod
-    def delete_product(id: int, session: Session) -> Product:
+    def delete_product(id: int, session: Session) -> dict:
         product = session.query(Product).filter(Product.id == id).first()
+        if product is None:
+            raise exceptions.NotFoundError(f"Product with id {id} not found")
         session.delete(product)
-        return product
+        return {"message": "Product deleted successfully"}
 
     @staticmethod
     def filtered_products(
@@ -230,7 +257,9 @@ class Queries:
 
         query = select(Sale)
 
-        need_product_join = min_sum is not None or max_sum is not None or product_id is not None
+        need_product_join = (
+            min_sum is not None or max_sum is not None or product_id is not None
+        )
         need_receipt_join = (
             min_date is not None or max_date is not None or employee_id is not None
         )

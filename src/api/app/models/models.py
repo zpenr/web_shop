@@ -1,6 +1,12 @@
 import datetime
 
-from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column, validates
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    relationship,
+    Mapped,
+    mapped_column,
+    validates,
+)
 from sqlalchemy import ForeignKey, DateTime
 
 

@@ -1,5 +1,6 @@
 from api.app.db.setup import Session
 
+
 def create_session():
     session = Session()
     try:
@@ -7,6 +8,6 @@ def create_session():
         session.commit()
     except Exception:
         session.rollback()
-        raise 
+        raise
     finally:
         session.close()

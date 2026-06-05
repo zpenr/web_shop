@@ -6,6 +6,7 @@ authors = [
     { name = "Myasnikov Vadim", email = "zpenr@bk.ru" }
 ]
 requires-python = ">=3.12.3"
+license = { text = "MIT" }
 dependencies = [
     "fastapi",
     "python-multipart",
@@ -24,6 +25,14 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "httpx"
+]
+docs = [
+    "sphinx", 
+    "sphinx-rtd-theme", 
+    "myst-parser", 
+    "sphinx-autobuild",
+    "sphinx-autodoc-typehints",
+    "sphinxcontrib-openapi"
 ]
 
 [build-system]
