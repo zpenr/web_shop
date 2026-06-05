@@ -6,6 +6,7 @@ authors = [
     { name = "Myasnikov Vadim", email = "zpenr@bk.ru" }
 ]
 requires-python = ">=3.12.3"
+license = { text = "MIT" }
 dependencies = [
     "fastapi",
     "python-multipart",
