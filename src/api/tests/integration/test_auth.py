@@ -133,7 +133,6 @@ class TestRegister:
         assert response.status_code == 418
         assert response.json()["detail"] == "Your passwords don't match"
 
-    @pytest.mark.xfail(reason="Баг: IntegrityError не обрабатывается, возвращает 500 вместо 409")
     def test_register_existing_login_returns_409(self, client, session):
         """Регистрация с существующим логином должна возвращать 409 Conflict"""
         job = self._create_job(session)
@@ -180,7 +179,6 @@ class TestGetCurrentUser:
 
         assert response.status_code == 401
 
-    @pytest.mark.xfail(reason="Баг: некорректный JWT вызывает 500 вместо 401")
     def test_get_current_user_malformed_token(self, client):
         """Доступ с некорректным форматом токена должен возвращать 401"""
         response = client.get("/auth/me/", headers={
@@ -199,7 +197,6 @@ class TestGetPermissions:
 
         assert response.status_code == 401
 
-    @pytest.mark.xfail(reason="Баг: permission_by_user_id не находит права для нового пользователя")
     def test_get_permissions_with_valid_token(self, client, session):
         """Получение прав с валидным токеном"""
         permission = Queries.insert_permission(
