@@ -1,4 +1,4 @@
-.PHONY: create-keys build stop format lint mypy ci
+.PHONY: create-keys build stop format lint mypy ci install test coverage clean up logs publish-lib help install-lib run create-env
 
 DB_URL ?= sqlite:///database.db
 TEST_DB_URL ?= sqlite:///test.db
@@ -43,3 +43,34 @@ mypy:
 	mypy src/api
 
 ci: format mypy lint 
+
+install:
+	python3 -m pip install --upgrade pip
+	python3 -m pip install -e .
+	python3 -m pip install pytest pytest-cov flake8 black isort mypy sphinx
+	make install-lib
+
+install-lib:
+	cd src/receipt-pdf-generator && python3 -m pip install -e .
+
+test:
+	pytest src/api/tests -v
+
+coverage:
+	pytest src/api/tests --cov=src/api/app --cov-report=html --cov-report=term
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".coverage" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
+
+up:
+	docker compose up -d
+
+logs:
+	docker compose logs -f
