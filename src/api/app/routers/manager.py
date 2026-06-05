@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from ..db.queries import Queries
 from api.app.dependencies import create_session
 from sqlalchemy.orm import Session
@@ -30,5 +30,10 @@ def dismiss_employee(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    if not permissions.add_boss:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can't do this",
+        )
     Queries.dismiss(id, boss_id, session)
     return {"message": "success"}

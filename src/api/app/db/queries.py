@@ -5,6 +5,7 @@ from api.app.models.models import (
 )
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
+from fastapi import HTTPException, status
 import api.app.core.exceptions as exceptions
 
 
@@ -148,6 +149,11 @@ class Queries:
             .filter(and_(Employee.id == id, Employee.boss == boss_id))
             .first()
         )
+        if employee is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee not found or not your subordinate",
+            )
         session.delete(employee)
         return employee
 
@@ -242,8 +248,8 @@ class Queries:
             if employee_id is not None:
                 query = query.join(Receipt.employee)
 
-            if product_id is not None:
-                query = query.where(Sale.id_product == product_id)
+        if product_id is not None:
+            query = query.where(Sale.id_product == product_id)
 
         if min_sum is not None:
             query = query.where(Product.price * Sale.quantity >= min_sum)
