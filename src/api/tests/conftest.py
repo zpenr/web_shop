@@ -67,19 +67,29 @@ def client(session):
 @pytest.fixture(scope="function")
 def admin_token(client, session):
     permission = Queries.insert_permission(
-        make_sales=True, add_categories=True, add_products=True,
-        redact_products=True, add_jobs=True, add_boss=True,
-        session=session
+        make_sales=True,
+        add_categories=True,
+        add_products=True,
+        redact_products=True,
+        add_jobs=True,
+        add_boss=True,
+        session=session,
     )
     session.flush()
     job = Queries.insert_job("admin", permission.id, session)
     session.flush()
 
-    resp = client.post("/auth/register/", data={
-        "name": "Admin", "surname": "Adminov",
-        "login": "admin", "password": "adminpass",
-        "password2": "adminpass", "id_job": job.id
-    })
+    resp = client.post(
+        "/auth/register/",
+        data={
+            "name": "Admin",
+            "surname": "Adminov",
+            "login": "admin",
+            "password": "adminpass",
+            "password2": "adminpass",
+            "id_job": job.id,
+        },
+    )
     assert resp.status_code == 200
     return resp.json()["access_token"]
 
@@ -93,6 +103,7 @@ def auth_header(admin_token):
 def cleanup_temp_key():
     yield
     import os
+
     os.unlink(tmp_key_file.name)
 
     if os.path.exists("./test.db"):

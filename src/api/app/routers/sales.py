@@ -10,7 +10,7 @@ from api.app.core.security import get_permissions
 from receipt_pdf_generator import ReceiptPDFGenerator
 from fastapi.responses import StreamingResponse
 from api.app.services.emailSenderService import EmailSender as email_sender
-import api.app.core.exceptions as exceptions   
+import api.app.core.exceptions as exceptions
 
 sales = APIRouter(tags=["sales"])
 
@@ -84,7 +84,9 @@ def all_products(session: Session = Depends(create_session)):
         list[schemas.ProductSchema]: Список товаров.
     """
     products_orm = Queries.all_products(session)
-    products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+    products_schema = [
+        schemas.ProductSchema.model_validate(row) for row in products_orm
+    ]
     return products_schema
 
 
@@ -125,7 +127,9 @@ def create_receipt(
     Returns:
         schemas.ReceiptSchema: Созданный чек.
     """
-    receipt = Queries.create_receipt(created_at=created_at, id_employee=user.id, session=session)
+    receipt = Queries.create_receipt(
+        created_at=created_at, id_employee=user.id, session=session
+    )
     return schemas.ReceiptSchema.model_validate(receipt)
 
 
@@ -155,7 +159,9 @@ def insert_sale(
     """
     try:
         if permissions.make_sales:
-            Queries.insert_sale_with_storage_check(id_product, quantity, receipt_id, session)
+            Queries.insert_sale_with_storage_check(
+                id_product, quantity, receipt_id, session
+            )
             return {"message": "success"}
         else:
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
@@ -176,7 +182,9 @@ def all_categories(session: Session = Depends(create_session)):
         list[schemas.CategorySchema]: Список категорий.
     """
     categories_orm = Queries.all_categories(session)
-    categories_schema = [schemas.CategorySchema.model_validate(row) for row in categories_orm]
+    categories_schema = [
+        schemas.CategorySchema.model_validate(row) for row in categories_orm
+    ]
     return categories_schema
 
 
@@ -206,7 +214,9 @@ def all_receipts(session: Session = Depends(create_session)):
         list[schemas.ReceiptSchema]: Список чеков.
     """
     receipts_orm = Queries.all_receipts(session)
-    receipts_schema = [schemas.ReceiptSchema.model_validate(row) for row in receipts_orm]
+    receipts_schema = [
+        schemas.ReceiptSchema.model_validate(row) for row in receipts_orm
+    ]
     return receipts_schema
 
 
@@ -221,7 +231,9 @@ def all_employees(session: Session = Depends(create_session)):
         list[schemas.UserPublicSchema]: Список сотрудников (публичные данные).
     """
     employees_orm = Queries.all_employees(session)
-    employees_schema = [schemas.UserPublicSchema.model_validate(row) for row in employees_orm]
+    employees_schema = [
+        schemas.UserPublicSchema.model_validate(row) for row in employees_orm
+    ]
     return employees_schema
 
 
@@ -320,7 +332,7 @@ def delete_product(
     """
     if not permissions.add_products:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
-    
+
     try:
         result = Queries.delete_product(id, session)
         return result
@@ -368,7 +380,9 @@ def filtered_products(
         list[schemas.ProductSchema]: Отфильтрованный список товаров.
     """
     products_orm = Queries.filtered_products(category_id, min_price, max_price, session)
-    products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+    products_schema = [
+        schemas.ProductSchema.model_validate(row) for row in products_orm
+    ]
     return products_schema
 
 
@@ -389,7 +403,9 @@ def products_by_category(
         list[schemas.ProductSchema]: Список товаров категории.
     """
     products_orm = Queries.products_by_category(category_id, session)
-    products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+    products_schema = [
+        schemas.ProductSchema.model_validate(row) for row in products_orm
+    ]
     return products_schema
 
 
@@ -487,7 +503,9 @@ def all_permissions(session: Session = Depends(create_session)):
         list[schemas.PermissionSchema]: Список прав доступа.
     """
     permissions_orm = Queries.get_all_permissions(session)
-    permissions_schema = [schemas.PermissionSchema.model_validate(row) for row in permissions_orm]
+    permissions_schema = [
+        schemas.PermissionSchema.model_validate(row) for row in permissions_orm
+    ]
     return permissions_schema
 
 
@@ -528,17 +546,22 @@ def products_to_buy(
     """
     if permissions.add_products:
         products_orm = Queries.products_to_buy(red_quantity, session)
-        product_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
+        product_schema = [
+            schemas.ProductSchema.model_validate(row) for row in products_orm
+        ]
         return product_schema
     else:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can't do this")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You can't do this"
+        )
+
 
 @sales.get("/{receipt_id}/pdf")
 async def get_receipt_pdf(
     receipt_id: int,
     session: Session = Depends(create_session),
     current_user: schemas.UserPublicSchema = Depends(get_current_user),
-)->StreamingResponse:
+) -> StreamingResponse:
     """Генерирует PDF-файл чека по его ID и возвращает его для скачивания.
 
     Args:
@@ -555,57 +578,58 @@ async def get_receipt_pdf(
     """
     try:
         receipt_orm = Queries.sales_by_receipt(receipt_id, session)
-        
+
         if not receipt_orm:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Чек с ID {receipt_id} не найден"
+                detail=f"Чек с ID {receipt_id} не найден",
             )
-        
+
         receipt = receipt_orm[0].receipt
         employee = receipt.employee
-        
+
         pdf_data = {
-            'receipt_id': receipt.id,
-            'created_at': receipt.created_at.strftime('%d.%m.%Y %H:%M'),
-            'employee_name': f"{employee.name} {employee.surname}",
-            'sales': []
+            "receipt_id": receipt.id,
+            "created_at": receipt.created_at.strftime("%d.%m.%Y %H:%M"),
+            "employee_name": f"{employee.name} {employee.surname}",
+            "sales": [],
         }
-        
+
         total_sum = 0
         for sale in receipt_orm:
             product = sale.product
             line_sum = product.price * sale.quantity
             total_sum += line_sum
-            
-            pdf_data['sales'].append({
-                'name': product.name,
-                'quantity': sale.quantity,
-                'price': product.price
-            })
-        
-        pdf_data['total_sum'] = total_sum
-        
+
+            pdf_data["sales"].append(
+                {
+                    "name": product.name,
+                    "quantity": sale.quantity,
+                    "price": product.price,
+                }
+            )
+
+        pdf_data["total_sum"] = total_sum
+
         pdf_buffer = ReceiptPDFGenerator().generate_receipt_pdf(pdf_data)
-        
+
         filename = f"receipt_{receipt_id}.pdf"
-        
+
         return StreamingResponse(
             pdf_buffer,
             media_type="application/pdf",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"'
-            }
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Внутренняя ошибка сервера: {str(e)}"
+            detail=f"Внутренняя ошибка сервера: {str(e)}",
         )
-    
+
+
 @sales.post("/send/{receipt_id}")
 async def send_receipt(
     receipt_id: int,
@@ -615,14 +639,14 @@ async def send_receipt(
 ) -> dict:
     """
     Отправка PDF чека на указанный email
-    
+
     Args:
         receipt_id: ID чека
         email_address: Email для отправки
         session: Сессия БД
         current_user: Текущий пользователь
         pdf_service: PDF сервис
-        
+
     Returns:
         dict: Статус отправки
     """
@@ -630,45 +654,47 @@ async def send_receipt(
         if "@" not in email_address or "." not in email_address:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Неверный формат email адреса"
+                detail="Неверный формат email адреса",
             )
-        
+
         receipt_orm = Queries.sales_by_receipt(receipt_id, session)
-        
+
         if not receipt_orm:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Чек с ID {receipt_id} не найден"
+                detail=f"Чек с ID {receipt_id} не найден",
             )
-        
+
         receipt = receipt_orm[0].receipt
         employee = receipt.employee
-        
+
         pdf_data = {
-            'receipt_id': receipt.id,
-            'created_at': receipt.created_at.strftime('%d.%m.%Y %H:%M'),
-            'employee_name': f"{employee.name} {employee.surname}",
-            'sales': []
+            "receipt_id": receipt.id,
+            "created_at": receipt.created_at.strftime("%d.%m.%Y %H:%M"),
+            "employee_name": f"{employee.name} {employee.surname}",
+            "sales": [],
         }
-        
+
         total_sum = 0
         for sale in receipt_orm:
             product = sale.product
             line_sum = product.price * sale.quantity
             total_sum += line_sum
-            
-            pdf_data['sales'].append({
-                'name': product.name,
-                'quantity': sale.quantity,
-                'price': product.price
-            })
-        
-        pdf_data['total_sum'] = total_sum
-        
+
+            pdf_data["sales"].append(
+                {
+                    "name": product.name,
+                    "quantity": sale.quantity,
+                    "price": product.price,
+                }
+            )
+
+        pdf_data["total_sum"] = total_sum
+
         # Генерируем PDF
         pdf_buffer = ReceiptPDFGenerator().generate_receipt_pdf(pdf_data)
         pdf_data_bytes = pdf_buffer.getvalue()
-        
+
         # Формируем email
         subject = f"Чек №{receipt_id} от {pdf_data['created_at']}"
         body = f"""Здравствуйте!
@@ -681,7 +707,7 @@ async def send_receipt(
 С уважением,
 Команда Вашего Магазина
 """
-        
+
         # Отправляем email
         email_filename = f"receipt_{receipt_id}.pdf"
         email_sent = email_sender.send_email(
@@ -689,26 +715,26 @@ async def send_receipt(
             subject=subject,
             body=body,
             attachment_data=pdf_data_bytes,
-            attachment_name=email_filename
+            attachment_name=email_filename,
         )
-        
+
         if not email_sent:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Не удалось отправить email"
+                detail="Не удалось отправить email",
             )
-        
+
         return {
             "message": "Чек успешно отправлен на email",
             "receipt_id": receipt_id,
             "email": email_address,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Внутренняя ошибка сервера: {str(e)}"
+            detail=f"Внутренняя ошибка сервера: {str(e)}",
         )

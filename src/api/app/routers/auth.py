@@ -6,7 +6,12 @@ from fastapi import (
     Depends,
 )
 from api.app.db.queries import Queries
-from api.app.schemas.schemas import UserSchema, TokenSchema, UserPublicSchema, PermissionSchema
+from api.app.schemas.schemas import (
+    UserSchema,
+    TokenSchema,
+    UserPublicSchema,
+    PermissionSchema,
+)
 from api.app.core import security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.app.dependencies import create_session
@@ -130,7 +135,8 @@ def insert_employee(
     password: str = Form(),
     password2: str = Form(),
     id_job: int = Form(),
-    session: Session = Depends(create_session)):
+    session: Session = Depends(create_session),
+):
     """Регистрирует нового сотрудника и возвращает JWT-токен.
 
     Args:

@@ -12,7 +12,7 @@ class NotFoundError(CustomException):
     code = 404
     message = "Resource not found"
 
+
 class NotEnoughProductException(QueriesException):
     code = 801
     message = "Product quantity at storage smaller than quantity that you want sell"
-
