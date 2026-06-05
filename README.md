@@ -107,14 +107,22 @@ make create-kyes
 > **Требования:** Python 3.12, `virtualenv` (рекомендовано)
 
 ```bash
-# 1️⃣ Создать виртуальное окружение
+# 1 Создать виртуальное окружение
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
-# 2️⃣ Установить зависимости
-pip install -e .[dev]       # зависимости для разработки (pytest, black …)
+# 2 Установить зависимости
+pip install -e .[dev]       # зависимости для разработки (pytest, …)
 
-# 3️⃣ Запустить сервер
+# 3 Подготовить переменные окружения
+make create-env
+# при необходимости откорректировать .env
+
+# 4 Создать ключи для JWT
+
+make create-kyes
+
+# 5 Запустить сервер
 uvicorn src.api.app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
