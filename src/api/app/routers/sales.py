@@ -24,6 +24,22 @@ def insert_product(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ) -> dict:
+    """Добавляет новый товар в систему.
+
+    Args:
+        name: Название товара.
+        price: Цена товара.
+        id_category: Идентификатор категории товара.
+        quantity_at_storage: Количество на складе.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        dict: Сообщение об успешном создании.
+
+    Raises:
+        HTTPException: 403 Forbidden, если пользователь не имеет права add_products.
+    """
     if permissions.add_products:
         Queries.insert_product(name, price, id_category, quantity_at_storage, session)
         return {"message": "success"}
@@ -37,6 +53,19 @@ def insert_category(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ) -> dict:
+    """Добавляет новую категорию товаров.
+
+    Args:
+        name: Название категории.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        dict: Сообщение об успешном создании.
+
+    Raises:
+        HTTPException: 403 Forbidden, если пользователь не имеет права add_categories.
+    """
     if permissions.add_categories:
         Queries.insert_category(name, session)
         return {"message": "success"}
@@ -46,6 +75,14 @@ def insert_category(
 
 @sales.get("/products/", response_model=list[schemas.ProductSchema])
 def all_products(session: Session = Depends(create_session)):
+    """Возвращает список всех товаров.
+
+    Args:
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.ProductSchema]: Список товаров.
+    """
     products_orm = Queries.all_products(session)
     products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
     return products_schema
@@ -57,6 +94,16 @@ def insert_job(
     permission_id: int,
     session: Session = Depends(create_session),
 ):
+    """Создаёт новую должность с заданными правами.
+
+    Args:
+        name: Название должности.
+        permission_id: Идентификатор набора прав (permissions).
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        schemas.JobSchema: Созданная должность.
+    """
     job_orm = Queries.insert_job(name, permission_id, session)
     job_schema = schemas.JobSchema.model_validate(job_orm)
     return job_schema
@@ -68,6 +115,16 @@ def create_receipt(
     user: schemas.UserPublicSchema = Depends(get_current_user),
     session: Session = Depends(create_session),
 ):
+    """Создаёт новый чек (receipt) для текущего пользователя.
+
+    Args:
+        created_at: Дата и время создания чека.
+        user: Текущий авторизованный пользователь.
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        schemas.ReceiptSchema: Созданный чек.
+    """
     receipt = Queries.create_receipt(created_at=created_at, id_employee=user.id, session=session)
     return schemas.ReceiptSchema.model_validate(receipt)
 
@@ -80,6 +137,22 @@ def insert_sale(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Добавляет продажу товара (с проверкой остатка на складе).
+
+    Args:
+        id_product: Идентификатор товара.
+        quantity: Количество проданных единиц.
+        receipt_id: Идентификатор чека, к которому относится продажа.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        dict: Сообщение об успешной продаже.
+
+    Raises:
+        HTTPException: 403 Forbidden, если нет права make_sales.
+        HTTPException: 409 Conflict, если недостаточно товара на складе или иная ошибка.
+    """
     try:
         if permissions.make_sales:
             Queries.insert_sale_with_storage_check(id_product, quantity, receipt_id, session)
@@ -94,6 +167,14 @@ def insert_sale(
 
 @sales.get("/categories/", response_model=list[schemas.CategorySchema])
 def all_categories(session: Session = Depends(create_session)):
+    """Возвращает список всех категорий товаров.
+
+    Args:
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.CategorySchema]: Список категорий.
+    """
     categories_orm = Queries.all_categories(session)
     categories_schema = [schemas.CategorySchema.model_validate(row) for row in categories_orm]
     return categories_schema
@@ -101,6 +182,14 @@ def all_categories(session: Session = Depends(create_session)):
 
 @sales.get("/jobs/", response_model=list[schemas.JobSchema])
 def all_jobs(session: Session = Depends(create_session)):
+    """Возвращает список всех должностей.
+
+    Args:
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.JobSchema]: Список должностей.
+    """
     jobs_orm = Queries.all_jobs(session)
     jobs_schema = [schemas.JobSchema.model_validate(row) for row in jobs_orm]
     return jobs_schema
@@ -108,6 +197,14 @@ def all_jobs(session: Session = Depends(create_session)):
 
 @sales.get("/receipts/", response_model=list[schemas.ReceiptSchema])
 def all_receipts(session: Session = Depends(create_session)):
+    """Возвращает список всех чеков.
+
+    Args:
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.ReceiptSchema]: Список чеков.
+    """
     receipts_orm = Queries.all_receipts(session)
     receipts_schema = [schemas.ReceiptSchema.model_validate(row) for row in receipts_orm]
     return receipts_schema
@@ -115,6 +212,14 @@ def all_receipts(session: Session = Depends(create_session)):
 
 @sales.get("/employees/", response_model=list[schemas.UserPublicSchema])
 def all_employees(session: Session = Depends(create_session)):
+    """Возвращает список всех сотрудников.
+
+    Args:
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.UserPublicSchema]: Список сотрудников (публичные данные).
+    """
     employees_orm = Queries.all_employees(session)
     employees_schema = [schemas.UserPublicSchema.model_validate(row) for row in employees_orm]
     return employees_schema
@@ -122,6 +227,14 @@ def all_employees(session: Session = Depends(create_session)):
 
 @sales.get("/sales/", response_model=list[schemas.SaleSchema])
 def all_sales(session: Session = Depends(create_session)):
+    """Возвращает список всех продаж.
+
+    Args:
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.SaleSchema]: Список продаж.
+    """
     sales_orm = Queries.all_sales(session)
     sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
     return sales_schema
@@ -134,6 +247,20 @@ def add_boss(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Назначает руководителя (boss) для сотрудника.
+
+    Args:
+        id: Идентификатор сотрудника.
+        boss_id: Идентификатор нового руководителя.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        dict: Сообщение об успешном назначении.
+
+    Raises:
+        HTTPException: 403 Forbidden, если нет права add_boss.
+    """
     if permissions.add_boss:
         Queries.add_boss(id, boss_id, session)
         return {"message": "success"}
@@ -149,6 +276,21 @@ def update_product(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Обновляет цену и/или количество товара на складе.
+
+    Args:
+        product_id: Идентификатор товара.
+        price: Новая цена (опционально).
+        quantity_at_storage: Новое количество на складе (опционально).
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        dict: Сообщение об успешном обновлении.
+
+    Raises:
+        HTTPException: 403 Forbidden, если нет права add_products.
+    """
     if permissions.add_products:
         Queries.update_product(product_id, price, quantity_at_storage, session)
         return {"message": "success"}
@@ -156,13 +298,26 @@ def update_product(
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
 
 
-# ИСПРАВЛЕННЫЙ ЭНДПОИНТ delete_product
 @sales.delete("/products/")
 def delete_product(
     id: int,
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Удаляет товар из системы.
+
+    Args:
+        id: Идентификатор товара.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        Результат удаления (например, сообщение).
+
+    Raises:
+        HTTPException: 403 Forbidden, если нет права add_products.
+        HTTPException: 404 Not Found, если товар не найден.
+    """
     if not permissions.add_products:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can't do this")
     
@@ -179,6 +334,16 @@ def product_by_id(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Возвращает товар по его идентификатору.
+
+    Args:
+        id: Идентификатор товара.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя (не используются явно).
+
+    Returns:
+        schemas.ProductSchema: Данные товара.
+    """
     return Queries.get_product_by_id(id, session)
 
 
@@ -190,6 +355,18 @@ def filtered_products(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Фильтрует товары по категории и диапазону цен.
+
+    Args:
+        category_id: Идентификатор категории (если None – все категории).
+        min_price: Минимальная цена (включительно).
+        max_price: Максимальная цена (включительно).
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        list[schemas.ProductSchema]: Отфильтрованный список товаров.
+    """
     products_orm = Queries.filtered_products(category_id, min_price, max_price, session)
     products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
     return products_schema
@@ -201,6 +378,16 @@ def products_by_category(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Возвращает товары указанной категории.
+
+    Args:
+        category_id: Идентификатор категории.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        list[schemas.ProductSchema]: Список товаров категории.
+    """
     products_orm = Queries.products_by_category(category_id, session)
     products_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
     return products_schema
@@ -212,6 +399,16 @@ def employee_sales(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Возвращает все продажи, совершённые конкретным сотрудником.
+
+    Args:
+        id: Идентификатор сотрудника.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        list[schemas.SaleSchema]: Список продаж сотрудника.
+    """
     sales_orm = Queries.employee_sales(id, session)
     sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
     return sales_schema
@@ -228,6 +425,21 @@ def sales_products(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Фильтрует продажи по сумме, дате, товару и сотруднику.
+
+    Args:
+        min_sum: Минимальная сумма продажи.
+        max_sum: Максимальная сумма продажи.
+        min_date: Нижняя граница даты.
+        max_date: Верхняя граница даты.
+        product_id: Идентификатор товара.
+        employee_id: Идентификатор сотрудника.
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        list[schemas.SaleSchema]: Отфильтрованный список продаж.
+    """
 
     sales_orm = Queries.filtered_sales(
         session, min_sum, max_sum, min_date, max_date, product_id, employee_id
@@ -242,6 +454,16 @@ def add_permission(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Добавляет новый набор прав доступа.
+
+    Args:
+        permisions: Схема с параметрами прав.
+        session: Сессия SQLAlchemy.
+        permissions: Права текущего пользователя (не используются явно).
+
+    Returns:
+        schemas.PermissionSchema: Созданный набор прав.
+    """
     permission_orm = Queries.insert_permission(
         permisions.make_sales,
         permisions.add_categories,
@@ -256,6 +478,14 @@ def add_permission(
 
 @sales.get("/permissions/", response_model=list[schemas.PermissionSchema])
 def all_permissions(session: Session = Depends(create_session)):
+    """Возвращает список всех доступных наборов прав.
+
+    Args:
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.PermissionSchema]: Список прав доступа.
+    """
     permissions_orm = Queries.get_all_permissions(session)
     permissions_schema = [schemas.PermissionSchema.model_validate(row) for row in permissions_orm]
     return permissions_schema
@@ -263,6 +493,15 @@ def all_permissions(session: Session = Depends(create_session)):
 
 @sales.get("/sales/receipt/{id_receipt}", response_model=list[schemas.SaleSchema])
 def sales_by_receipt(id_receipt: int, session: Session = Depends(create_session)):
+    """Возвращает продажи, относящиеся к указанному чеку.
+
+    Args:
+        id_receipt: Идентификатор чека.
+        session: Сессия SQLAlchemy.
+
+    Returns:
+        list[schemas.SaleSchema]: Список продаж в чеке.
+    """
     sales_orm = Queries.sales_by_receipt(id_receipt, session)
     sales_schema = [schemas.SaleSchema.model_validate(row) for row in sales_orm]
     return sales_schema
@@ -274,6 +513,19 @@ def products_to_buy(
     session: Session = Depends(create_session),
     permissions: schemas.PermissionSchema = Depends(get_permissions),
 ):
+    """Возвращает товары, количество которых на складе ниже указанного порога.
+
+    Args:
+        red_quantity: Порог (товары с остатком <= red_quantity считаются критическими).
+        session: Сессия SQLAlchemy.
+        permissions: Права доступа текущего пользователя.
+
+    Returns:
+        list[schemas.ProductSchema]: Список товаров, требующих закупки.
+
+    Raises:
+        HTTPException: 403 Forbidden, если нет права add_products.
+    """
     if permissions.add_products:
         products_orm = Queries.products_to_buy(red_quantity, session)
         product_schema = [schemas.ProductSchema.model_validate(row) for row in products_orm]
@@ -287,6 +539,20 @@ async def get_receipt_pdf(
     session: Session = Depends(create_session),
     current_user: schemas.UserPublicSchema = Depends(get_current_user),
 )->StreamingResponse:
+    """Генерирует PDF-файл чека по его ID и возвращает его для скачивания.
+
+    Args:
+        receipt_id: Идентификатор чека.
+        session: Сессия SQLAlchemy.
+        current_user: Текущий авторизованный пользователь (только для проверки).
+
+    Returns:
+        StreamingResponse: PDF-файл в виде потока.
+
+    Raises:
+        HTTPException: 404 Not Found, если чек не найден.
+        HTTPException: 500 Internal Server Error при внутренней ошибке.
+    """
     try:
         receipt_orm = Queries.sales_by_receipt(receipt_id, session)
         
