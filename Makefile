@@ -1,4 +1,4 @@
-.PHONY: create-keys build stop
+.PHONY: create-keys build stop format lint mypy ci
 
 DB_URL ?= sqlite:///database.db
 TEST_DB_URL ?= sqlite:///test.db
@@ -37,3 +37,9 @@ format:
 lint:
 	pip install flake8
 	flake8 src/api
+
+mypy:
+	pip install mypy
+	mypy src/api
+
+ci: format mypy lint 
