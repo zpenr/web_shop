@@ -27,3 +27,5 @@ create-env:
 	@echo "access_token_exp_min=$(ACCESS_TOKEN_EXP_MIN)" >> $(ENV_FILE)
 	@echo "Файл $(ENV_FILE) готов."
 	
+run:
+	uvicorn src.api.app.main:app
