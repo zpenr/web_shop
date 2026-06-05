@@ -1,6 +1,6 @@
 import jwt
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.app.core.config import settings
@@ -17,7 +17,7 @@ def encode_jwt(
     expire_min: int = settings.access_token_exp_min,
 ):
     to_encode = payload.copy()
-    expire = datetime.utcnow() + timedelta(minutes=expire_min)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=expire_min)
     to_encode.update(exp=expire)
     encoded = jwt.encode(payload=to_encode, key=key, algorithm=algoritm)
     return encoded
