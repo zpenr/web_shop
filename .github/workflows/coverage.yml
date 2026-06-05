@@ -29,10 +29,16 @@ jobs:
       
       - name: Run tests with coverage
         run: |
-          pytest src/api/tests/integration/ --cov=src/api/app --cov-report=xml --cov-report=term-missing
+          pytest src/api/tests/ --cov=src/api/app --cov-report=xml --cov-report=html --cov-report=term-missing
       
-      - name: Upload coverage report
+      - name: Upload XML coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-xml
           path: coverage.xml
+      
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
