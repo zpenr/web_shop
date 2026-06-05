@@ -5,7 +5,7 @@ description = "A simple web shop application."
 authors = [
     { name = "Myasnikov Vadim", email = "zpenr@bk.ru" }
 ]
-requires-python = ">=3.12.3"
+requires-python = ">=3.12.3,<4.0.0"
 license = { text = "MIT" }
 dependencies = [
     "fastapi",
