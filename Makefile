@@ -29,3 +29,7 @@ create-env:
 	
 run:
 	uvicorn src.api.app.main:app
+
+format:
+	pip install black
+	black src/api
