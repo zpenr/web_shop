@@ -33,3 +33,7 @@ run:
 format:
 	pip install black
 	black src/api
+
+lint:
+	pip install flake8
+	flake8 src/api
