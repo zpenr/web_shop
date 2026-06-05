@@ -1,0 +1,618 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>routers.sales &mdash; Web Shop 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Web Shop
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Web Shop</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">routers.sales</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for routers.sales</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">schemas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.db.queries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Queries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_session</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.orm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.routers.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_current_user</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.core.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_permissions</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">receipt_pdf_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReceiptPDFGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.services.emailSenderService</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailSender</span> <span class="k">as</span> <span class="n">email_sender</span>
+<span class="n">sales</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sales&quot;</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="insert_product">
+<a class="viewcode-back" href="../../api.html#routers.sales.insert_product">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/products/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">insert_product</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">price</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">id_category</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">quantity_at_storage</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
+        <span class="n">Queries</span><span class="o">.</span><span class="n">insert_product</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">id_category</span><span class="p">,</span> <span class="n">quantity_at_storage</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="insert_category">
+<a class="viewcode-back" href="../../api.html#routers.sales.insert_category">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/categories/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">insert_category</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_categories</span><span class="p">:</span>
+        <span class="n">Queries</span><span class="o">.</span><span class="n">insert_category</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="all_products">
+<a class="viewcode-back" href="../../api.html#routers.sales.all_products">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/products/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">all_products</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_products</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">products_schema</span></div>
+
+
+
+<div class="viewcode-block" id="insert_job">
+<a class="viewcode-back" href="../../api.html#routers.sales.insert_job">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/jobs/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">schemas</span><span class="o">.</span><span class="n">JobSchema</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">insert_job</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">permission_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">job_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">insert_job</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">permission_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+    <span class="n">job_schema</span> <span class="o">=</span> <span class="n">schemas</span><span class="o">.</span><span class="n">JobSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">job_orm</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">job_schema</span></div>
+
+
+
+<div class="viewcode-block" id="create_receipt">
+<a class="viewcode-back" href="../../api.html#routers.sales.create_receipt">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/receipts/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_receipt</span><span class="p">(</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">receipt</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">create_receipt</span><span class="p">(</span><span class="n">created_at</span><span class="o">=</span><span class="n">created_at</span><span class="p">,</span> <span class="n">id_employee</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">receipt</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="insert_sale">
+<a class="viewcode-back" href="../../api.html#routers.sales.insert_sale">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/sales/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">insert_sale</span><span class="p">(</span>
+    <span class="n">id_product</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">receipt_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">make_sales</span><span class="p">:</span>
+            <span class="n">Queries</span><span class="o">.</span><span class="n">insert_sale_with_storage_check</span><span class="p">(</span><span class="n">id_product</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">receipt_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Something went wrong&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="all_categories">
+<a class="viewcode-back" href="../../api.html#routers.sales.all_categories">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/categories/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">CategorySchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">all_categories</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">categories_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_categories</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">categories_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">CategorySchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">categories_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">categories_schema</span></div>
+
+
+
+<div class="viewcode-block" id="all_jobs">
+<a class="viewcode-back" href="../../api.html#routers.sales.all_jobs">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/jobs/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">JobSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">all_jobs</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">jobs_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_jobs</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">jobs_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">JobSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">jobs_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">jobs_schema</span></div>
+
+
+
+<div class="viewcode-block" id="all_receipts">
+<a class="viewcode-back" href="../../api.html#routers.sales.all_receipts">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/receipts/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">all_receipts</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">receipts_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_receipts</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">receipts_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">receipts_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">receipts_schema</span></div>
+
+
+
+<div class="viewcode-block" id="all_employees">
+<a class="viewcode-back" href="../../api.html#routers.sales.all_employees">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/employees/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">all_employees</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">employees_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_employees</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">employees_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">employees_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">employees_schema</span></div>
+
+
+
+<div class="viewcode-block" id="all_sales">
+<a class="viewcode-back" href="../../api.html#routers.sales.all_sales">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/sales/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">all_sales</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_sales</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">sales_schema</span></div>
+
+
+
+<div class="viewcode-block" id="add_boss">
+<a class="viewcode-back" href="../../api.html#routers.sales.add_boss">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s2">&quot;/employees/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_boss</span><span class="p">(</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">boss_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_boss</span><span class="p">:</span>
+        <span class="n">Queries</span><span class="o">.</span><span class="n">add_boss</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">boss_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="update_product">
+<a class="viewcode-back" href="../../api.html#routers.sales.update_product">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s2">&quot;/products/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_product</span><span class="p">(</span>
+    <span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">price</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">quantity_at_storage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
+        <span class="n">Queries</span><span class="o">.</span><span class="n">update_product</span><span class="p">(</span><span class="n">product_id</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">quantity_at_storage</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="delete_product">
+<a class="viewcode-back" href="../../api.html#routers.sales.delete_product">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;/products/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">delete_product</span><span class="p">(</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
+        <span class="n">Queries</span><span class="o">.</span><span class="n">delete_product</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="product_by_id">
+<a class="viewcode-back" href="../../api.html#routers.sales.product_by_id">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/products/</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">product_by_id</span><span class="p">(</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="k">return</span> <span class="n">Queries</span><span class="o">.</span><span class="n">get_product_by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="filtered_products">
+<a class="viewcode-back" href="../../api.html#routers.sales.filtered_products">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/products/filter/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">filtered_products</span><span class="p">(</span>
+    <span class="n">category_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">max_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">filtered_products</span><span class="p">(</span><span class="n">category_id</span><span class="p">,</span> <span class="n">min_price</span><span class="p">,</span> <span class="n">max_price</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">products_schema</span></div>
+
+
+
+<div class="viewcode-block" id="products_by_category">
+<a class="viewcode-back" href="../../api.html#routers.sales.products_by_category">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/products/category/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">products_by_category</span><span class="p">(</span>
+    <span class="n">category_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">products_by_category</span><span class="p">(</span><span class="n">category_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">products_schema</span></div>
+
+
+
+<div class="viewcode-block" id="employee_sales">
+<a class="viewcode-back" href="../../api.html#routers.sales.employee_sales">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/employee/</span><span class="si">{id}</span><span class="s2">/sales&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">employee_sales</span><span class="p">(</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">employee_sales</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+    <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">sales_schema</span></div>
+
+
+
+<div class="viewcode-block" id="sales_products">
+<a class="viewcode-back" href="../../api.html#routers.sales.sales_products">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/sales/filter/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sales_products</span><span class="p">(</span>
+    <span class="n">min_sum</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_sum</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_date</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_date</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">employee_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+
+    <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">filtered_sales</span><span class="p">(</span>
+        <span class="n">session</span><span class="p">,</span> <span class="n">min_sum</span><span class="p">,</span> <span class="n">max_sum</span><span class="p">,</span> <span class="n">min_date</span><span class="p">,</span> <span class="n">max_date</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">employee_id</span>
+    <span class="p">)</span>
+    <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">sales_schema</span></div>
+
+
+
+<div class="viewcode-block" id="add_permission">
+<a class="viewcode-back" href="../../api.html#routers.sales.add_permission">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/permissions/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_permission</span><span class="p">(</span>
+    <span class="n">permisions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">permission_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">insert_permission</span><span class="p">(</span>
+        <span class="n">permisions</span><span class="o">.</span><span class="n">make_sales</span><span class="p">,</span>
+        <span class="n">permisions</span><span class="o">.</span><span class="n">add_categories</span><span class="p">,</span>
+        <span class="n">permisions</span><span class="o">.</span><span class="n">add_products</span><span class="p">,</span>
+        <span class="n">permisions</span><span class="o">.</span><span class="n">redact_products</span><span class="p">,</span>
+        <span class="n">permisions</span><span class="o">.</span><span class="n">add_jobs</span><span class="p">,</span>
+        <span class="n">permisions</span><span class="o">.</span><span class="n">add_boss</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">permission_orm</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="all_permissions">
+<a class="viewcode-back" href="../../api.html#routers.sales.all_permissions">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/permissions/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">all_permissions</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">permissions_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">get_all_permissions</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">permissions_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">permissions_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">permissions_schema</span></div>
+
+
+
+<div class="viewcode-block" id="sales_by_receipt">
+<a class="viewcode-back" href="../../api.html#routers.sales.sales_by_receipt">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/sales/receipt/</span><span class="si">{id_receipt}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sales_by_receipt</span><span class="p">(</span><span class="n">id_receipt</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+    <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">sales_by_receipt</span><span class="p">(</span><span class="n">id_receipt</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+    <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">sales_schema</span></div>
+
+
+
+<div class="viewcode-block" id="products_to_buy">
+<a class="viewcode-back" href="../../api.html#routers.sales.products_to_buy">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/products/to/buy&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">products_to_buy</span><span class="p">(</span>
+    <span class="n">red_quantity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
+        <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">products_to_buy</span><span class="p">(</span><span class="n">red_quantity</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="n">product_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">product_schema</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_receipt_pdf">
+<a class="viewcode-back" href="../../api.html#routers.sales.get_receipt_pdf">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/</span><span class="si">{receipt_id}</span><span class="s2">/pdf&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_receipt_pdf</span><span class="p">(</span>
+    <span class="n">receipt_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span><span class="o">-&gt;</span><span class="n">StreamingResponse</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">receipt_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">sales_by_receipt</span><span class="p">(</span><span class="n">receipt_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">receipt_orm</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Чек с ID </span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> не найден&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="n">receipt</span> <span class="o">=</span> <span class="n">receipt_orm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">receipt</span>
+        <span class="n">employee</span> <span class="o">=</span> <span class="n">receipt</span><span class="o">.</span><span class="n">employee</span>
+        
+        <span class="n">pdf_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;receipt_id&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s1">&#39;created_at&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">.%m.%Y %H:%M&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;employee_name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">surname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s1">&#39;sales&#39;</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="p">}</span>
+        
+        <span class="n">total_sum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">sale</span> <span class="ow">in</span> <span class="n">receipt_orm</span><span class="p">:</span>
+            <span class="n">product</span> <span class="o">=</span> <span class="n">sale</span><span class="o">.</span><span class="n">product</span>
+            <span class="n">line_sum</span> <span class="o">=</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span>
+            <span class="n">total_sum</span> <span class="o">+=</span> <span class="n">line_sum</span>
+            
+            <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;sales&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+                <span class="s1">&#39;price&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span>
+            <span class="p">})</span>
+        
+        <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;total_sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_sum</span>
+        
+        <span class="n">pdf_buffer</span> <span class="o">=</span> <span class="n">ReceiptPDFGenerator</span><span class="p">()</span><span class="o">.</span><span class="n">generate_receipt_pdf</span><span class="p">(</span><span class="n">pdf_data</span><span class="p">)</span>
+        
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;receipt_</span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2">.pdf&quot;</span>
+        
+        <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span>
+            <span class="n">pdf_buffer</span><span class="p">,</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/pdf&quot;</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;attachment; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Внутренняя ошибка сервера: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="send_receipt">
+<a class="viewcode-back" href="../../api.html#routers.sales.send_receipt">[docs]</a>
+<span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/send/</span><span class="si">{receipt_id}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_receipt</span><span class="p">(</span>
+    <span class="n">receipt_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">email_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Отправка PDF чека на указанный email</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        receipt_id: ID чека</span>
+<span class="sd">        email_address: Email для отправки</span>
+<span class="sd">        session: Сессия БД</span>
+<span class="sd">        current_user: Текущий пользователь</span>
+<span class="sd">        pdf_service: PDF сервис</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Статус отправки</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">email_address</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">email_address</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Неверный формат email адреса&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="n">receipt_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">sales_by_receipt</span><span class="p">(</span><span class="n">receipt_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">receipt_orm</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Чек с ID </span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> не найден&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="n">receipt</span> <span class="o">=</span> <span class="n">receipt_orm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">receipt</span>
+        <span class="n">employee</span> <span class="o">=</span> <span class="n">receipt</span><span class="o">.</span><span class="n">employee</span>
+        
+        <span class="n">pdf_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;receipt_id&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s1">&#39;created_at&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">.%m.%Y %H:%M&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;employee_name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">surname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s1">&#39;sales&#39;</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="p">}</span>
+        
+        <span class="n">total_sum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">sale</span> <span class="ow">in</span> <span class="n">receipt_orm</span><span class="p">:</span>
+            <span class="n">product</span> <span class="o">=</span> <span class="n">sale</span><span class="o">.</span><span class="n">product</span>
+            <span class="n">line_sum</span> <span class="o">=</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span>
+            <span class="n">total_sum</span> <span class="o">+=</span> <span class="n">line_sum</span>
+            
+            <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;sales&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+                <span class="s1">&#39;price&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span>
+            <span class="p">})</span>
+        
+        <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;total_sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_sum</span>
+        
+        <span class="c1"># Генерируем PDF</span>
+        <span class="n">pdf_buffer</span> <span class="o">=</span> <span class="n">ReceiptPDFGenerator</span><span class="p">()</span><span class="o">.</span><span class="n">generate_receipt_pdf</span><span class="p">(</span><span class="n">pdf_data</span><span class="p">)</span>
+        <span class="n">pdf_data_bytes</span> <span class="o">=</span> <span class="n">pdf_buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+        
+        <span class="c1"># Формируем email</span>
+        <span class="n">subject</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Чек №</span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> от </span><span class="si">{</span><span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Здравствуйте!</span>
+
+<span class="s2">Присылаем вам чек №</span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> от </span><span class="si">{</span><span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.</span>
+
+<span class="s2">Магазин: Ваш Магазин</span>
+<span class="s2">Продавец: </span><span class="si">{</span><span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;employee_name&#39;</span><span class="p">]</span><span class="si">}</span>
+
+<span class="s2">С уважением,</span>
+<span class="s2">Команда Вашего Магазина</span>
+<span class="s2">&quot;&quot;&quot;</span>
+        
+        <span class="c1"># Отправляем email</span>
+        <span class="n">email_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;receipt_</span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2">.pdf&quot;</span>
+        <span class="n">email_sent</span> <span class="o">=</span> <span class="n">email_sender</span><span class="o">.</span><span class="n">send_email</span><span class="p">(</span>
+            <span class="n">to_email</span><span class="o">=</span><span class="n">email_address</span><span class="p">,</span>
+            <span class="n">subject</span><span class="o">=</span><span class="n">subject</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
+            <span class="n">attachment_data</span><span class="o">=</span><span class="n">pdf_data_bytes</span><span class="p">,</span>
+            <span class="n">attachment_name</span><span class="o">=</span><span class="n">email_filename</span>
+        <span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">email_sent</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Не удалось отправить email&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Чек успешно отправлен на email&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;receipt_id&quot;</span><span class="p">:</span> <span class="n">receipt_id</span><span class="p">,</span>
+            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email_address</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="p">}</span>
+        
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Внутренняя ошибка сервера: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
