@@ -218,7 +218,6 @@ class TestDismissEmployee:
 
         return boss, child
 
-    @pytest.mark.xfail(reason="Баг: DELETE /manager/childrens/ требует права через get_permissions")
     def test_dismiss_employee_success(self, client, session, auth_header):
         boss, child = self._create_boss_with_child(session)
 
@@ -234,8 +233,8 @@ class TestDismissEmployee:
         deleted_employee = session.query(Employee).filter(Employee.id == child.id).first()
         assert deleted_employee is None
 
-    @pytest.mark.xfail(reason="Баг: DELETE /manager/childrens/ требует права через get_permissions")
-    def test_dismiss_employee_not_own_child(self, client, session, auth_header):
+    def test_dismiss_employee_not_own_child(self, client, session):
+        """Проверка что boss2 не может уволить child принадлежащего boss1"""
         boss1_permission = Queries.insert_permission(
             make_sales=True, add_categories=True, add_products=True,
             redact_products=True, add_jobs=True, add_boss=True,
@@ -282,9 +281,19 @@ class TestDismissEmployee:
         child.boss = boss1.id
         session.flush()
 
+        # Получаем токен для boss2
+        response = client.post("/auth/login/", data={
+            "login": "boss2_test",
+            "password": "password123"
+        })
+        assert response.status_code == 200
+        boss2_token = response.json()["access_token"]
+
+        # boss2 пытается уволить child принадлежащего boss1
         response = client.delete(
             f"/manager/childrens/?id={child.id}&boss_id={boss2.id}",
-            headers=auth_header
+            headers={"Authorization": f"Bearer {boss2_token}"}
         )
 
-        assert response.status_code in [403, 404]
+        # Должно вернуть 404 (child не найден среди подчиненных boss2)
+        assert response.status_code == 404
