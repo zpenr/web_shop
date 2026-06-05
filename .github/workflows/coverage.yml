@@ -19,10 +19,13 @@ jobs:
       - name: Create .dev.env file
         run: make create-env
       
+      - name: Create JWT keys
+        run: make create-keys
+      
       - name: Install dependencies
         run: |
           pip install -e .
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov httpx2
       
       - name: Run tests with coverage
         run: |
