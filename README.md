@@ -135,9 +135,8 @@ uvicorn src.api.app.main:app --reload --host 0.0.0.0 --port 8000
 ### Запуск всех тестов
 
 ```bash
-make test                # alias for `pytest tests/ -v --cov=src`
+make test
 ```
-
 
 ### Запуск только юнит‑тестов
 
@@ -148,21 +147,18 @@ make unit-tests
 ### Запуск только интеграционных
 
 ```bash
-pytest integration-tests
+make integration-tests
 ```
 
 ---
 
 ## 📚 Документация
 
-* **`docs/architecture.md`** – описание слоевой архитектуры (core / db / routers / etc.)  
-* **`docs/api.md`** – перечень эндпоинтов, схем запросов/ответов, примеры curl.  
-* **`docs/diagrams/`** – Mermaid‑диаграммы:  
+* **`docs/diagrams/`** – диаграммы:  
   * `use-case.md` – роли (Клиент, Менеджер, Администратор) и их функции.  
   * `sequence.md` – последовательность создания чека, генерации PDF и отправки email.  
-  * `deployment.md` – контейнерные зависимости (API → DB → nginx).  
 
-Собрать HTML‑документацию (если используете MkDocs/Sphinx) – `make docs`.
+Собрать HTML‑документацию (Sphinx) – `make docs`.
 
 ---
 
@@ -170,16 +166,17 @@ pytest integration-tests
 
 | Команда | Описание |
 |---------|----------|
-| `make install` | Установить зависимости (runtime + dev) |
 | `make test` | Запустить pytest с покрытием |
+| `make unit-tests` | Запуск только юнит‑тестов |
+| `make integration-tests` | Запуск только интеграционных |
 | `make run` | `uvicorn src.api.app.main:app` (dev‑режим) |
-| `make build` | Собрать образ Docker (`docker-compose build`) |
 | `make format` | Форматировать код `black` |
 | `make lint` | Lint `flake8` |
 | `make mypy` | Проверка типов `mypy` |
 | `make docs` | сгенерировать sphinx документацию `docs/` |
 | `make build` / `stop` | Управление контейнерами |
-
+| `make create-kyes` | Создать ключи для JWT |
+| `make create-env` | Создать окружение с параметрами по умолчанию |
 ---
 
 ## 📦 Переиспользуемый компонент – **receipt‑pdf‑generator**
