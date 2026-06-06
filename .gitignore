@@ -6,5 +6,7 @@ venv
 **/.pytest_cache
 *.env
 **/certs
+.coverage
+htmlcov/
 *.egg-info
 *cache*
