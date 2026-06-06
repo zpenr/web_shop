@@ -81,6 +81,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">receipt_pdf_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReceiptPDFGenerator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">api.app.services.emailSenderService</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailSender</span> <span class="k">as</span> <span class="n">email_sender</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">api.app.core.exceptions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">exceptions</span>
+
 <span class="n">sales</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sales&quot;</span><span class="p">])</span>
 
 
@@ -95,6 +97,22 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Добавляет новый товар в систему.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Название товара.</span>
+<span class="sd">        price: Цена товара.</span>
+<span class="sd">        id_category: Идентификатор категории товара.</span>
+<span class="sd">        quantity_at_storage: Количество на складе.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Сообщение об успешном создании.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 403 Forbidden, если пользователь не имеет права add_products.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
         <span class="n">Queries</span><span class="o">.</span><span class="n">insert_product</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">id_category</span><span class="p">,</span> <span class="n">quantity_at_storage</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
@@ -111,6 +129,19 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Добавляет новую категорию товаров.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Название категории.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Сообщение об успешном создании.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 403 Forbidden, если пользователь не имеет права add_categories.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_categories</span><span class="p">:</span>
         <span class="n">Queries</span><span class="o">.</span><span class="n">insert_category</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
@@ -123,8 +154,18 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.all_products">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/products/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">all_products</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех товаров.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.ProductSchema]: Список товаров.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_products</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="n">products_schema</span></div>
 
 
@@ -137,6 +178,16 @@
     <span class="n">permission_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Создаёт новую должность с заданными правами.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Название должности.</span>
+<span class="sd">        permission_id: Идентификатор набора прав (permissions).</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        schemas.JobSchema: Созданная должность.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">job_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">insert_job</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">permission_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
     <span class="n">job_schema</span> <span class="o">=</span> <span class="n">schemas</span><span class="o">.</span><span class="n">JobSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">job_orm</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">job_schema</span></div>
@@ -151,7 +202,19 @@
     <span class="n">user</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
 <span class="p">):</span>
-    <span class="n">receipt</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">create_receipt</span><span class="p">(</span><span class="n">created_at</span><span class="o">=</span><span class="n">created_at</span><span class="p">,</span> <span class="n">id_employee</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Создаёт новый чек (receipt) для текущего пользователя.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        created_at: Дата и время создания чека.</span>
+<span class="sd">        user: Текущий авторизованный пользователь.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        schemas.ReceiptSchema: Созданный чек.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">receipt</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">create_receipt</span><span class="p">(</span>
+        <span class="n">created_at</span><span class="o">=</span><span class="n">created_at</span><span class="p">,</span> <span class="n">id_employee</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">receipt</span><span class="p">)</span></div>
 
 
@@ -166,9 +229,27 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Добавляет продажу товара (с проверкой остатка на складе).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id_product: Идентификатор товара.</span>
+<span class="sd">        quantity: Количество проданных единиц.</span>
+<span class="sd">        receipt_id: Идентификатор чека, к которому относится продажа.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Сообщение об успешной продаже.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 403 Forbidden, если нет права make_sales.</span>
+<span class="sd">        HTTPException: 409 Conflict, если недостаточно товара на складе или иная ошибка.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">make_sales</span><span class="p">:</span>
-            <span class="n">Queries</span><span class="o">.</span><span class="n">insert_sale_with_storage_check</span><span class="p">(</span><span class="n">id_product</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">receipt_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+            <span class="n">Queries</span><span class="o">.</span><span class="n">insert_sale_with_storage_check</span><span class="p">(</span>
+                <span class="n">id_product</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">receipt_id</span><span class="p">,</span> <span class="n">session</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span>
@@ -183,8 +264,18 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.all_categories">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/categories/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">CategorySchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">all_categories</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех категорий товаров.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.CategorySchema]: Список категорий.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">categories_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_categories</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-    <span class="n">categories_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">CategorySchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">categories_orm</span><span class="p">]</span>
+    <span class="n">categories_schema</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">schemas</span><span class="o">.</span><span class="n">CategorySchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">categories_orm</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="n">categories_schema</span></div>
 
 
@@ -193,6 +284,14 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.all_jobs">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/jobs/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">JobSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">all_jobs</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех должностей.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.JobSchema]: Список должностей.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">jobs_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_jobs</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
     <span class="n">jobs_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">JobSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">jobs_orm</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">jobs_schema</span></div>
@@ -203,8 +302,18 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.all_receipts">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/receipts/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">all_receipts</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех чеков.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.ReceiptSchema]: Список чеков.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">receipts_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_receipts</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-    <span class="n">receipts_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">receipts_orm</span><span class="p">]</span>
+    <span class="n">receipts_schema</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">schemas</span><span class="o">.</span><span class="n">ReceiptSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">receipts_orm</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="n">receipts_schema</span></div>
 
 
@@ -213,8 +322,18 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.all_employees">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/employees/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">all_employees</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех сотрудников.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.UserPublicSchema]: Список сотрудников (публичные данные).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">employees_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_employees</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-    <span class="n">employees_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">employees_orm</span><span class="p">]</span>
+    <span class="n">employees_schema</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">employees_orm</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="n">employees_schema</span></div>
 
 
@@ -223,6 +342,14 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.all_sales">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/sales/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">all_sales</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех продаж.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.SaleSchema]: Список продаж.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">all_sales</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
     <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">sales_schema</span></div>
@@ -238,6 +365,20 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Назначает руководителя (boss) для сотрудника.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id: Идентификатор сотрудника.</span>
+<span class="sd">        boss_id: Идентификатор нового руководителя.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Сообщение об успешном назначении.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 403 Forbidden, если нет права add_boss.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_boss</span><span class="p">:</span>
         <span class="n">Queries</span><span class="o">.</span><span class="n">add_boss</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">boss_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
@@ -256,6 +397,21 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Обновляет цену и/или количество товара на складе.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        product_id: Идентификатор товара.</span>
+<span class="sd">        price: Новая цена (опционально).</span>
+<span class="sd">        quantity_at_storage: Новое количество на складе (опционально).</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Сообщение об успешном обновлении.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 403 Forbidden, если нет права add_products.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
         <span class="n">Queries</span><span class="o">.</span><span class="n">update_product</span><span class="p">(</span><span class="n">product_id</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">quantity_at_storage</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
@@ -272,11 +428,28 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
-    <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
-        <span class="n">Queries</span><span class="o">.</span><span class="n">delete_product</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Удаляет товар из системы.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id: Идентификатор товара.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Результат удаления (например, сообщение).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 403 Forbidden, если нет права add_products.</span>
+<span class="sd">        HTTPException: 404 Not Found, если товар не найден.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">delete_product</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+    <span class="k">except</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span></div>
 
 
 
@@ -288,6 +461,16 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает товар по его идентификатору.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id: Идентификатор товара.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя (не используются явно).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        schemas.ProductSchema: Данные товара.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">Queries</span><span class="o">.</span><span class="n">get_product_by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span></div>
 
 
@@ -302,8 +485,22 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Фильтрует товары по категории и диапазону цен.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        category_id: Идентификатор категории (если None – все категории).</span>
+<span class="sd">        min_price: Минимальная цена (включительно).</span>
+<span class="sd">        max_price: Максимальная цена (включительно).</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.ProductSchema]: Отфильтрованный список товаров.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">filtered_products</span><span class="p">(</span><span class="n">category_id</span><span class="p">,</span> <span class="n">min_price</span><span class="p">,</span> <span class="n">max_price</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
-    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="n">products_schema</span></div>
 
 
@@ -316,8 +513,20 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает товары указанной категории.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        category_id: Идентификатор категории.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.ProductSchema]: Список товаров категории.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">products_by_category</span><span class="p">(</span><span class="n">category_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
-    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+    <span class="n">products_schema</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="n">products_schema</span></div>
 
 
@@ -330,6 +539,16 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает все продажи, совершённые конкретным сотрудником.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id: Идентификатор сотрудника.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.SaleSchema]: Список продаж сотрудника.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">employee_sales</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
     <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">sales_schema</span></div>
@@ -349,6 +568,21 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Фильтрует продажи по сумме, дате, товару и сотруднику.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        min_sum: Минимальная сумма продажи.</span>
+<span class="sd">        max_sum: Максимальная сумма продажи.</span>
+<span class="sd">        min_date: Нижняя граница даты.</span>
+<span class="sd">        max_date: Верхняя граница даты.</span>
+<span class="sd">        product_id: Идентификатор товара.</span>
+<span class="sd">        employee_id: Идентификатор сотрудника.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.SaleSchema]: Отфильтрованный список продаж.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">filtered_sales</span><span class="p">(</span>
         <span class="n">session</span><span class="p">,</span> <span class="n">min_sum</span><span class="p">,</span> <span class="n">max_sum</span><span class="p">,</span> <span class="n">min_date</span><span class="p">,</span> <span class="n">max_date</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">employee_id</span>
@@ -366,6 +600,16 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Добавляет новый набор прав доступа.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        permisions: Схема с параметрами прав.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права текущего пользователя (не используются явно).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        schemas.PermissionSchema: Созданный набор прав.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">permission_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">insert_permission</span><span class="p">(</span>
         <span class="n">permisions</span><span class="o">.</span><span class="n">make_sales</span><span class="p">,</span>
         <span class="n">permisions</span><span class="o">.</span><span class="n">add_categories</span><span class="p">,</span>
@@ -383,8 +627,18 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.all_permissions">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/permissions/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">all_permissions</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех доступных наборов прав.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.PermissionSchema]: Список прав доступа.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">permissions_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">get_all_permissions</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-    <span class="n">permissions_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">permissions_orm</span><span class="p">]</span>
+    <span class="n">permissions_schema</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">permissions_orm</span>
+    <span class="p">]</span>
     <span class="k">return</span> <span class="n">permissions_schema</span></div>
 
 
@@ -393,6 +647,15 @@
 <a class="viewcode-back" href="../../api.html#routers.sales.sales_by_receipt">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/sales/receipt/</span><span class="si">{id_receipt}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">sales_by_receipt</span><span class="p">(</span><span class="n">id_receipt</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает продажи, относящиеся к указанному чеку.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id_receipt: Идентификатор чека.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.SaleSchema]: Список продаж в чеке.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">sales_by_receipt</span><span class="p">(</span><span class="n">id_receipt</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
     <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">sales_schema</span></div>
@@ -407,12 +670,30 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает товары, количество которых на складе ниже указанного порога.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        red_quantity: Порог (товары с остатком &lt;= red_quantity считаются критическими).</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[schemas.ProductSchema]: Список товаров, требующих закупки.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 403 Forbidden, если нет права add_products.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">permissions</span><span class="o">.</span><span class="n">add_products</span><span class="p">:</span>
         <span class="n">products_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">products_to_buy</span><span class="p">(</span><span class="n">red_quantity</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
-        <span class="n">product_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span><span class="p">]</span>
+        <span class="n">product_schema</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">schemas</span><span class="o">.</span><span class="n">ProductSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">products_orm</span>
+        <span class="p">]</span>
         <span class="k">return</span> <span class="n">product_schema</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;You can&#39;t do this&quot;</span>
+        <span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="get_receipt_pdf">
@@ -422,61 +703,76 @@
     <span class="n">receipt_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">current_user</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">UserPublicSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
-<span class="p">)</span><span class="o">-&gt;</span><span class="n">StreamingResponse</span><span class="p">:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StreamingResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Генерирует PDF-файл чека по его ID и возвращает его для скачивания.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        receipt_id: Идентификатор чека.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        current_user: Текущий авторизованный пользователь (только для проверки).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        StreamingResponse: PDF-файл в виде потока.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 404 Not Found, если чек не найден.</span>
+<span class="sd">        HTTPException: 500 Internal Server Error при внутренней ошибке.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">receipt_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">sales_by_receipt</span><span class="p">(</span><span class="n">receipt_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
-        
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">receipt_orm</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
                 <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
-                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Чек с ID </span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> не найден&quot;</span>
+                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Чек с ID </span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> не найден&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-        
+
         <span class="n">receipt</span> <span class="o">=</span> <span class="n">receipt_orm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">receipt</span>
         <span class="n">employee</span> <span class="o">=</span> <span class="n">receipt</span><span class="o">.</span><span class="n">employee</span>
-        
+
         <span class="n">pdf_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;receipt_id&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="s1">&#39;created_at&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">.%m.%Y %H:%M&#39;</span><span class="p">),</span>
-            <span class="s1">&#39;employee_name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">surname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="s1">&#39;sales&#39;</span><span class="p">:</span> <span class="p">[]</span>
+            <span class="s2">&quot;receipt_id&quot;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">.%m.%Y %H:%M&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;employee_name&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">surname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sales&quot;</span><span class="p">:</span> <span class="p">[],</span>
         <span class="p">}</span>
-        
+
         <span class="n">total_sum</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">sale</span> <span class="ow">in</span> <span class="n">receipt_orm</span><span class="p">:</span>
             <span class="n">product</span> <span class="o">=</span> <span class="n">sale</span><span class="o">.</span><span class="n">product</span>
             <span class="n">line_sum</span> <span class="o">=</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span>
             <span class="n">total_sum</span> <span class="o">+=</span> <span class="n">line_sum</span>
-            
-            <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;sales&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-                <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
-                <span class="s1">&#39;price&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span>
-            <span class="p">})</span>
-        
-        <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;total_sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_sum</span>
-        
+
+            <span class="n">pdf_data</span><span class="p">[</span><span class="s2">&quot;sales&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+                    <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="n">pdf_data</span><span class="p">[</span><span class="s2">&quot;total_sum&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_sum</span>
+
         <span class="n">pdf_buffer</span> <span class="o">=</span> <span class="n">ReceiptPDFGenerator</span><span class="p">()</span><span class="o">.</span><span class="n">generate_receipt_pdf</span><span class="p">(</span><span class="n">pdf_data</span><span class="p">)</span>
-        
+
         <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;receipt_</span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2">.pdf&quot;</span>
-        
+
         <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span>
             <span class="n">pdf_buffer</span><span class="p">,</span>
             <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/pdf&quot;</span><span class="p">,</span>
-            <span class="n">headers</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;attachment; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
-            <span class="p">}</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;attachment; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">},</span>
         <span class="p">)</span>
-        
+
     <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
         <span class="k">raise</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
             <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
-            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Внутренняя ошибка сервера: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Внутренняя ошибка сервера: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-    
+
+
 <div class="viewcode-block" id="send_receipt">
 <a class="viewcode-back" href="../../api.html#routers.sales.send_receipt">[docs]</a>
 <span class="nd">@sales</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/send/</span><span class="si">{receipt_id}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -488,14 +784,14 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Отправка PDF чека на указанный email</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        receipt_id: ID чека</span>
 <span class="sd">        email_address: Email для отправки</span>
 <span class="sd">        session: Сессия БД</span>
 <span class="sd">        current_user: Текущий пользователь</span>
 <span class="sd">        pdf_service: PDF сервис</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Статус отправки</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -503,45 +799,47 @@
         <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">email_address</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">email_address</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
                 <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
-                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Неверный формат email адреса&quot;</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Неверный формат email адреса&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-        
+
         <span class="n">receipt_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">sales_by_receipt</span><span class="p">(</span><span class="n">receipt_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
-        
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">receipt_orm</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
                 <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
-                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Чек с ID </span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> не найден&quot;</span>
+                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Чек с ID </span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> не найден&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-        
+
         <span class="n">receipt</span> <span class="o">=</span> <span class="n">receipt_orm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">receipt</span>
         <span class="n">employee</span> <span class="o">=</span> <span class="n">receipt</span><span class="o">.</span><span class="n">employee</span>
-        
+
         <span class="n">pdf_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;receipt_id&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="s1">&#39;created_at&#39;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">.%m.%Y %H:%M&#39;</span><span class="p">),</span>
-            <span class="s1">&#39;employee_name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">surname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="s1">&#39;sales&#39;</span><span class="p">:</span> <span class="p">[]</span>
+            <span class="s2">&quot;receipt_id&quot;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">receipt</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">.%m.%Y %H:%M&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;employee_name&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">employee</span><span class="o">.</span><span class="n">surname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sales&quot;</span><span class="p">:</span> <span class="p">[],</span>
         <span class="p">}</span>
-        
+
         <span class="n">total_sum</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">sale</span> <span class="ow">in</span> <span class="n">receipt_orm</span><span class="p">:</span>
             <span class="n">product</span> <span class="o">=</span> <span class="n">sale</span><span class="o">.</span><span class="n">product</span>
             <span class="n">line_sum</span> <span class="o">=</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span>
             <span class="n">total_sum</span> <span class="o">+=</span> <span class="n">line_sum</span>
-            
-            <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;sales&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-                <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
-                <span class="s1">&#39;price&#39;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span>
-            <span class="p">})</span>
-        
-        <span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;total_sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_sum</span>
-        
+
+            <span class="n">pdf_data</span><span class="p">[</span><span class="s2">&quot;sales&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="n">sale</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+                    <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="n">pdf_data</span><span class="p">[</span><span class="s2">&quot;total_sum&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_sum</span>
+
         <span class="c1"># Генерируем PDF</span>
         <span class="n">pdf_buffer</span> <span class="o">=</span> <span class="n">ReceiptPDFGenerator</span><span class="p">()</span><span class="o">.</span><span class="n">generate_receipt_pdf</span><span class="p">(</span><span class="n">pdf_data</span><span class="p">)</span>
         <span class="n">pdf_data_bytes</span> <span class="o">=</span> <span class="n">pdf_buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
-        
+
         <span class="c1"># Формируем email</span>
         <span class="n">subject</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Чек №</span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2"> от </span><span class="si">{</span><span class="n">pdf_data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">body</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Здравствуйте!</span>
@@ -554,7 +852,7 @@
 <span class="s2">С уважением,</span>
 <span class="s2">Команда Вашего Магазина</span>
 <span class="s2">&quot;&quot;&quot;</span>
-        
+
         <span class="c1"># Отправляем email</span>
         <span class="n">email_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;receipt_</span><span class="si">{</span><span class="n">receipt_id</span><span class="si">}</span><span class="s2">.pdf&quot;</span>
         <span class="n">email_sent</span> <span class="o">=</span> <span class="n">email_sender</span><span class="o">.</span><span class="n">send_email</span><span class="p">(</span>
@@ -562,28 +860,28 @@
             <span class="n">subject</span><span class="o">=</span><span class="n">subject</span><span class="p">,</span>
             <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
             <span class="n">attachment_data</span><span class="o">=</span><span class="n">pdf_data_bytes</span><span class="p">,</span>
-            <span class="n">attachment_name</span><span class="o">=</span><span class="n">email_filename</span>
+            <span class="n">attachment_name</span><span class="o">=</span><span class="n">email_filename</span><span class="p">,</span>
         <span class="p">)</span>
-        
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">email_sent</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
                 <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
-                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Не удалось отправить email&quot;</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Не удалось отправить email&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-        
+
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Чек успешно отправлен на email&quot;</span><span class="p">,</span>
             <span class="s2">&quot;receipt_id&quot;</span><span class="p">:</span> <span class="n">receipt_id</span><span class="p">,</span>
             <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email_address</span><span class="p">,</span>
-            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
         <span class="p">}</span>
-        
+
     <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
         <span class="k">raise</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
             <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
-            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Внутренняя ошибка сервера: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Внутренняя ошибка сервера: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 </pre></div>

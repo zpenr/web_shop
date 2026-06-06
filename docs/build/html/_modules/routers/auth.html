@@ -77,7 +77,12 @@
     <span class="n">Depends</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">api.app.db.queries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Queries</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.schemas.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">UserSchema</span><span class="p">,</span> <span class="n">TokenSchema</span><span class="p">,</span> <span class="n">UserPublicSchema</span><span class="p">,</span> <span class="n">PermissionSchema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">api.app.schemas.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">UserSchema</span><span class="p">,</span>
+    <span class="n">TokenSchema</span><span class="p">,</span>
+    <span class="n">UserPublicSchema</span><span class="p">,</span>
+    <span class="n">PermissionSchema</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">api.app.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">security</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPBearer</span><span class="p">,</span> <span class="n">HTTPAuthorizationCredentials</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">api.app.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_session</span>
@@ -94,6 +99,19 @@
     <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Form</span><span class="p">(),</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Проверяет учётные данные пользователя при входе.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        login: Логин пользователя (из формы).</span>
+<span class="sd">        password: Пароль пользователя (из формы).</span>
+<span class="sd">        session: Сессия SQLAlchemy (внедряется зависимостью).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Объект пользователя (модель SQLAlchemy), если аутентификация успешна.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 401 Unauthorized, если логин не найден или пароль неверен.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">exc</span> <span class="o">=</span> <span class="n">HTTPException</span><span class="p">(</span>
         <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_401_UNAUTHORIZED</span><span class="p">,</span>
         <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid login or password&quot;</span><span class="p">,</span>
@@ -114,6 +132,14 @@
 <a class="viewcode-back" href="../../api.html#routers.auth.auth_user">[docs]</a>
 <span class="nd">@auth</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/login/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">TokenSchema</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">auth_user</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">UserSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">validate_auth_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Эндпоинт входа в систему. Возвращает JWT-токен.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        user: Валидированный пользователь (внедряется через Depends).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        TokenSchema: Объект, содержащий access_token и token_type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">jwt_payload</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -133,6 +159,19 @@
     <span class="n">creds</span><span class="p">:</span> <span class="n">HTTPAuthorizationCredentials</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">http_bearer</span><span class="p">),</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserPublicSchema</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Извлекает текущего пользователя из JWT-токена.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        creds: Учётные данные HTTP Bearer (токен).</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        UserPublicSchema: Публичные данные пользователя.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 401 Unauthorized при невалидном токене или отсутствии пользователя.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">token</span> <span class="o">=</span> <span class="n">creds</span><span class="o">.</span><span class="n">credentials</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">security</span><span class="o">.</span><span class="n">decode_jwt</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">employee_by_login</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;login&quot;</span><span class="p">),</span> <span class="n">session</span><span class="p">)</span>
@@ -144,6 +183,14 @@
 <a class="viewcode-back" href="../../api.html#routers.auth.user_self_info">[docs]</a>
 <span class="nd">@auth</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/me/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">UserPublicSchema</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">user_self_info</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает информацию о текущем авторизованном пользователе.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        user: Пользователь, полученный через get_current_user.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        UserPublicSchema: Данные пользователя.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">user</span></div>
 
 
@@ -154,6 +201,14 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">is_permission</span><span class="p">(</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">security</span><span class="o">.</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionSchema</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает права доступа текущего пользователя.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        user: Права пользователя, полученные через зависимость security.get_permissions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        PermissionSchema: Схема прав доступа.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">user</span></div>
 
 
@@ -170,6 +225,23 @@
     <span class="n">id_job</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Form</span><span class="p">(),</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Регистрирует нового сотрудника и возвращает JWT-токен.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Имя сотрудника.</span>
+<span class="sd">        surname: Фамилия сотрудника.</span>
+<span class="sd">        login: Логин (должен быть уникальным).</span>
+<span class="sd">        password: Пароль.</span>
+<span class="sd">        password2: Повтор пароля для проверки.</span>
+<span class="sd">        id_job: ID должности (связан с правами).</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        TokenSchema: JWT-токен для зарегистрированного пользователя.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: 418 I&#39;m a teapot, если пароли не совпадают.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">password</span> <span class="o">!=</span> <span class="n">password2</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
             <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_418_IM_A_TEAPOT</span><span class="p">,</span>

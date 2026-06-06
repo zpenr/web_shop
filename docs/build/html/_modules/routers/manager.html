@@ -84,6 +84,15 @@
 <a class="viewcode-back" href="../../api.html#routers.manager.get_all_childrens">[docs]</a>
 <span class="nd">@manager</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/childrens/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">UserPublicSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_all_childrens</span><span class="p">(</span><span class="n">boss_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает список всех подчинённых сотрудников для указанного руководителя.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        boss_id: Идентификатор руководителя (начальника).</span>
+<span class="sd">        session: Сессия SQLAlchemy, внедряемая зависимостью.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[UserPublicSchema]: Список подчинённых сотрудников (публичные данные).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">employees_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">get_childrens</span><span class="p">(</span><span class="n">boss_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
     <span class="n">employees_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">UserPublicSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">employees_orm</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">employees_schema</span></div>
@@ -94,6 +103,15 @@
 <a class="viewcode-back" href="../../api.html#routers.manager.get_childrens_sales">[docs]</a>
 <span class="nd">@manager</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/sales/&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">SaleSchema</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_childrens_sales</span><span class="p">(</span><span class="n">boss_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Возвращает все продажи, совершённые подчинёнными сотрудниками руководителя.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        boss_id: Идентификатор руководителя.</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[SaleSchema]: Список продаж, совершённых подчинёнными.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sales_orm</span> <span class="o">=</span> <span class="n">Queries</span><span class="o">.</span><span class="n">get_childrens_sales</span><span class="p">(</span><span class="n">boss_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
     <span class="n">sales_schema</span> <span class="o">=</span> <span class="p">[</span><span class="n">SaleSchema</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">sales_orm</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">sales_schema</span></div>
@@ -109,6 +127,17 @@
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">create_session</span><span class="p">),</span>
     <span class="n">permissions</span><span class="p">:</span> <span class="n">schemas</span><span class="o">.</span><span class="n">PermissionSchema</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_permissions</span><span class="p">),</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Увольняет подчинённого сотрудника.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id: Идентификатор увольняемого сотрудника.</span>
+<span class="sd">        boss_id: Идентификатор текущего руководителя (нужен для проверки подчинённости).</span>
+<span class="sd">        session: Сессия SQLAlchemy.</span>
+<span class="sd">        permissions: Права доступа текущего пользователя (должны включать право на увольнение).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Сообщение об успешном увольнении {&quot;message&quot;: &quot;success&quot;}.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">Queries</span><span class="o">.</span><span class="n">dismiss</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">boss_id</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">}</span></div>
 
