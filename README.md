@@ -224,3 +224,7 @@ with open("receipt.pdf", "wb") as f:
 - **Автор:** Myasnikov Vadim  
 - **E‑mail:** [zpenr@bk.ru](mailto:zpenr@bk.ru)  
 - **GitHub:** <https://github.com/zpenr/web-shop>  
+
+- **Автор:** Vitalik 
+- **E‑mail:** [green.ta1e10@gmail.com](mailto:green.ta1e10@gmail.com)  
+- **GitHub:** <https://github.com/vit0lik>  
