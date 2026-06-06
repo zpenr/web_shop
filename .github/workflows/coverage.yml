@@ -1,0 +1,44 @@
+name: Coverage
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Create .dev.env file
+        run: make create-env
+      
+      - name: Create JWT keys
+        run: make create-keys
+      
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install pytest pytest-cov httpx2
+      
+      - name: Run tests with coverage
+        run: |
+          pytest src/api/tests/ --cov=src/api/app --cov-report=xml --cov-report=html --cov-report=term-missing
+      
+      - name: Upload XML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+      
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
