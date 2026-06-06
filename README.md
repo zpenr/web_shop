@@ -228,3 +228,5 @@ with open("receipt.pdf", "wb") as f:
 - **Автор:** Vitalik 
 - **E‑mail:** [green.ta1e10@gmail.com](mailto:green.ta1e10@gmail.com)  
 - **GitHub:** <https://github.com/vit0lik>  
+
+- **Автор:** Elizarev Mihail  

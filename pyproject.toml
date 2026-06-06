@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "A simple web shop application."
 authors = [
     { name = "Myasnikov Vadim", email = "zpenr@bk.ru" },
-    { name = "Vitalik", email = "green.ta1e10@gmail.com" }
+    { name = "Vitalik", email = "green.ta1e10@gmail.com" },
+    { name = "Elizariev Mikhail", email = "temp@gmail.com" }
 ]
 requires-python = ">=3.12.3,<4.0.0"
 license = { text = "MIT" }
