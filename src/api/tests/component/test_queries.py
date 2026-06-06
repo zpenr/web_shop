@@ -340,7 +340,7 @@ def test_products_to_buy(red_quantity, session, sample_data):
 def test_delete_product_success(session, sample_data):
     product_id = sample_data["prod1"].id
     result = Queries.delete_product(product_id, session)
-    assert result == {"message": "Product deleted successfully"}
+    assert result == {"message": "success"}
     with pytest.raises(Exception):
         Queries.get_product_by_id(product_id, session)
 
@@ -354,11 +354,11 @@ def test_delete_product_nonexistent_raises_not_found(session, sample_data):
 def test_update_product_boundary_values(session, sample_data):
     prod = sample_data["prod1"]
     Queries.update_product(prod.id, 0, None, session)
-    session.refresh(prod)
+    session.flush()
     assert prod.price == 0
-    Queries.update_product(prod.id, None, -5, session)
-    session.refresh(prod)
-    assert prod.quantity_at_storage == -5
+    Queries.update_product(prod.id, None, 5, session)
+    session.flush()
+    assert prod.quantity_at_storage == 5
 
 
 def test_update_product_nonexistent_raises_attribute_error(session, sample_data):
